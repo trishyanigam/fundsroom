@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { Role } from '@prisma/client';
 import {
+  register,
   login,
   getMe,
   testAdminRoute,
@@ -13,7 +14,8 @@ import { authorizeRoles } from '../middleware/roleMiddleware';
 
 const router = Router();
 
-// Public Authentication Route
+// Public Authentication Routes
+router.post('/register', register);
 router.post('/login', login);
 
 // Protected Auth Profile Route

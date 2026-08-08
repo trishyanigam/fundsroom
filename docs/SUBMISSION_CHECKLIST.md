@@ -3,7 +3,7 @@
 This checklist tracks all required submission artifacts for the **Mini ERP + CRM Operations Portal**.
 
 > [!NOTE]
-> **Phase 3 Audit Status:** JWT authentication, bcrypt password security, `authenticateToken` middleware, `authorizeRoles` RBAC middleware, `/login`, `/me`, and role test endpoints are 100% completed and tested. Live deployment URLs will be populated upon completing Phase 12 (Deployment) and Phase 13 (Documentation Audit).
+> **Phase 4 Audit Status:** Customer CRM backend module, payload validation, search/filtering/pagination, role-based authorization (`ADMIN`, `SALES`, `ACCOUNTS` read-only, `WAREHOUSE` forbidden), React Customer List & Detail pages, and Postman requests are 100% completed and tested.
 
 ---
 
@@ -15,9 +15,9 @@ This checklist tracks all required submission artifacts for the **Mini ERP + CRM
 | **2** | **Live Frontend URL** | Deployed React frontend application on Vercel | ⏳ Pending Phase 12 | `[Pending Production Deployment in Phase 12]` |
 | **3** | **Live Backend API URL** | Deployed Node.js Express REST API on Render | ⏳ Pending Phase 12 | `[Pending Production Deployment in Phase 12]` |
 | **4** | **Test Credentials** | Active login accounts for all 4 roles (`ADMIN`, `SALES`, `WAREHOUSE`, `ACCOUNTS`) | ✅ Phase 3 Complete (Dev Accounts Seeded) | Demo accounts seeded in DB<br>(See table below for dev credentials) |
-| **5** | **API Documentation / Postman** | Comprehensive API specification and downloadable Postman collection | ✅ Phase 3 Complete (Auth Collection Ready) | Specs: `docs/API_PLAN.md`<br>Collection: `postman/Mini_ERP_CRM_Phase3_Auth.postman_collection.json` |
-| **6** | **README & Setup Guide** | Comprehensive `README.md` with overview, architecture, local setup & cloud deployment guide | ✅ Phase 0-3 Complete | Root `README.md` created & updated |
-| **7** | **Architecture & DB Blueprint** | Detailed explanation of backend, frontend, database schema, RBAC, & snapshot rules | ✅ Phase 0-3 Complete | `docs/ARCHITECTURE.md`<br>`docs/DATABASE_DESIGN.md`<br>`docs/ROLE_PERMISSIONS.md` |
+| **5** | **API Documentation / Postman** | Comprehensive API specification and downloadable Postman collection | ✅ Phase 4 Complete (Auth & Customer Collections Ready) | Specs: `docs/API_PLAN.md`<br>Collection: `postman/Mini_ERP_CRM_Phase4_Customers.postman_collection.json` |
+| **6** | **README & Setup Guide** | Comprehensive `README.md` with overview, architecture, local setup & cloud deployment guide | ✅ Phase 0-4 Complete | Root `README.md` created & updated |
+| **7** | **Architecture & DB Blueprint** | Detailed explanation of backend, frontend, database schema, RBAC, & snapshot rules | ✅ Phase 0-4 Complete | `docs/ARCHITECTURE.md`<br>`docs/DATABASE_DESIGN.md`<br>`docs/ROLE_PERMISSIONS.md` |
 | **8** | **Known Limitations** | Documented technical boundaries, assumptions, and future enhancements | ✅ Phase 0 Complete | `docs/ASSUMPTIONS.md`<br>`docs/EDGE_CASES.md` |
 
 ---

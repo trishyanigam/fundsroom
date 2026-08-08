@@ -10,9 +10,9 @@ The portal enforces role-based access control (RBAC) across four distinct intern
 
 ## Current Status
 
-**PHASE 3 - Authentication + JWT + Role-Based Access Control (RBAC) Complete**
+**PHASE 4 - Customer CRM Module Complete**
 
-Stateless JWT authentication, bcrypt password hashing, Express request type extensions, authentication middleware (`authenticateToken`), authorization middleware (`authorizeRoles`), `/login`, `/me`, and role test endpoints are fully implemented and tested.
+Customer CRM backend REST APIs, payload validation, search/filtering/pagination, role-based authorization (`ADMIN` & `SALES` full CRUD, `ACCOUNTS` read-only, `WAREHOUSE` forbidden), React Customer List & Detail pages, and Postman test collection are fully implemented and verified.
 
 ---
 
@@ -35,18 +35,20 @@ Stateless JWT authentication, bcrypt password hashing, Express request type exte
 
 ---
 
-## Authentication & Role-Based Access Control (Phase 3)
+## Customer CRM Module Features (Phase 4)
 
-### Security Standards
-- **Password Security:** All passwords are hashed using `bcrypt` (10 salt rounds) before storage. Plaintext passwords and password hashes are never returned in API responses or logs.
-- **Stateless Tokens:** Authentication uses signed JSON Web Tokens (JWT) passed in the `Authorization: Bearer <token>` HTTP header.
-- **Configurable Secret & Expiration:** `JWT_SECRET` and `JWT_EXPIRES_IN` (default `24h`) are read from environment variables.
+- **Create Customer (`POST /api/v1/customers`):** Register new wholesale buyers, retail clients, or distributors with business info, contact details, optional GST number, address, status, follow-up date, and notes.
+- **Search & Filtering (`GET /api/v1/customers`):** Real-time multi-field search (`customerName`, `businessName`, `mobile`, `email`), status filters (`LEAD`, `ACTIVE`, `INACTIVE`), customer type filters (`RETAIL`, `WHOLESALE`, `DISTRIBUTOR`), and page limit controls.
+- **Customer Details (`GET /api/v1/customers/:id`):** Full profile overview displaying contact info, GST, address, and interaction notes.
+- **Update Customer (`PUT /api/v1/customers/:id`):** Edit profile details, change status, and update follow-up notes & dates.
+- **Role-Based Access Control (RBAC):**
+  - **`ADMIN` & `SALES`**: Full access to Create, Read, Update, Search, and Edit notes.
+  - **`ACCOUNTS`**: Read-only access to view and search customer profiles (Mutating endpoints return `403 Forbidden`).
+  - **`WAREHOUSE`**: Customer module navigation and APIs are completely restricted (`403 Forbidden`).
 
-### HTTP Response Standards
-- **`HTTP 401 Unauthorized`**: Authentication missing, malformed Bearer header, invalid signature, or expired token.
-- **`HTTP 403 Forbidden`**: User is authenticated, but their role lacks required permissions for the endpoint.
+---
 
-### Development Demo Accounts
+## Development Demo Accounts
 
 The database seed script generates 4 pre-configured role test accounts with hashed passwords:
 
@@ -56,9 +58,6 @@ The database seed script generates 4 pre-configured role test accounts with hash
 | **`SALES`** | `sales@erp.local` | `SalesPass123!` | Customer CRM, Products View, Challans (Draft & Confirm) |
 | **`WAREHOUSE`** | `warehouse@erp.local` | `WarehousePass123!` | Product Catalog (CRUD), Stock Movements, View Confirmed Challans |
 | **`ACCOUNTS`** | `accounts@erp.local` | `AccountsPass123!` | Read-Only Audit across All Modules |
-
-> [!WARNING]
-> Development credentials are strictly for local testing and demonstration. Real production passwords must be managed securely via environment variables (`ADMIN_SEED_PASSWORD`, etc.) and never committed to source control.
 
 ---
 
@@ -70,59 +69,45 @@ mini-erp-crm/
 ├── backend/
 │   ├── prisma/
 │   │   ├── schema.prisma         # PostgreSQL schema (User, Customer, Product, StockMovement, Challan, ChallanItem)
-│   │   └── seed.ts               # Database seed script for 4 role accounts
+│   │   └── seed.ts               # Database seed script
 │   ├── src/
-│   │   ├── config/               # Configuration helpers
 │   │   ├── controllers/
-│   │   │   └── authController.ts # Login, me, and RBAC test controllers
+│   │   │   ├── authController.ts # Auth endpoints
+│   │   │   └── customerController.ts # Customer CRM endpoints
 │   │   ├── middleware/
-│   │   │   ├── authMiddleware.ts # Bearer JWT token verification middleware
-│   │   │   └── roleMiddleware.ts # RBAC authorization middleware
+│   │   │   ├── authMiddleware.ts # Bearer JWT token verification
+│   │   │   └── roleMiddleware.ts # RBAC authorization
 │   │   ├── routes/
-│   │   │   └── authRoutes.ts     # Auth endpoints (/login, /me, /test/*)
+│   │   │   ├── authRoutes.ts
+│   │   │   └── customerRoutes.ts
 │   │   ├── services/
-│   │   │   └── authService.ts    # Authentication business logic
-│   │   ├── types/
-│   │   │   └── express.d.ts      # Express Request type declaration (req.user)
-│   │   ├── utils/
-│   │   │   ├── jwt.ts            # JWT sign & verify functions
-│   │   │   └── password.ts       # Bcrypt hash & compare functions
+│   │   │   ├── authService.ts
+│   │   │   └── customerService.ts # Customer Prisma queries, search & pagination
 │   │   ├── validators/
-│   │   │   └── authValidator.ts  # Login payload validator
+│   │   │   ├── authValidator.ts
+│   │   │   └── customerValidator.ts # Customer payload validator
 │   │   └── server.ts             # Express server & endpoint mounting
 │   ├── .env                      # Local environment settings
-│   ├── .env.example              # Environment variable template
-│   ├── package.json              # Backend dependencies & scripts
-│   └── tsconfig.json             # Backend TypeScript configuration
+│   └── package.json
 │
-├── frontend/                 # React + Vite TypeScript SPA
+├── frontend/
 │   ├── src/
+│   │   ├── components/
+│   │   │   └── CustomerFormModal.tsx # Reusable Add & Edit Customer Modal
+│   │   ├── pages/
+│   │   │   ├── CustomerListPage.tsx  # Customer Directory with Search, Filter & Pagination
+│   │   │   └── CustomerDetailPage.tsx# Customer Detail Profile & Notes View
 │   │   ├── services/
-│   │   │   └── api.ts            # Axios API client (`api.ts`)
-│   │   ├── App.tsx               # Main application shell
-│   │   ├── main.tsx              # React DOM entrypoint
-│   │   └── vite-env.d.ts         # Vite environment types
-│   ├── .env.example              # Frontend environment placeholders
-│   ├── package.json              # Frontend dependencies
-│   └── vite.config.ts            # Vite configuration
+│   │   │   ├── api.ts            # Axios base client
+│   │   │   └── customerService.ts# Customer API client calls
+│   │   ├── App.tsx               # Main application shell & router
+│   │   └── main.tsx
+│   ├── .env
+│   └── package.json
 │
-├── docs/                     # Comprehensive design & architecture specifications
-│   ├── ARCHITECTURE.md
-│   ├── DATABASE_DESIGN.md
-│   ├── ROLE_PERMISSIONS.md
-│   ├── BUSINESS_FLOWS.md
-│   ├── API_PLAN.md
-│   ├── FRONTEND_PLAN.md
-│   ├── DEVELOPMENT_ROADMAP.md
-│   ├── ASSUMPTIONS.md
-│   ├── EDGE_CASES.md
-│   └── SUBMISSION_CHECKLIST.md
-│
-├── postman/                  # Postman collection
-│   └── Mini_ERP_CRM_Phase3_Auth.postman_collection.json
-│
-├── .gitignore                # Root Git ignore rules
-└── README.md                 # Project documentation overview
+├── docs/                     # Design & architecture specifications
+├── postman/                  # Postman collections
+└── README.md
 ```
 
 ---
@@ -135,41 +120,19 @@ git clone https://github.com/trishyanigam/fundsroom.git
 cd Fundsroom
 ```
 
-### 2. Install Dependencies
+### 2. Install Dependencies & Setup DB
 ```bash
-# Backend dependencies
+# Backend
 cd backend
 npm install
+npx prisma migrate dev
+npm run prisma:seed
+npm run dev
 
-# Frontend dependencies
+# Frontend (in new terminal)
 cd ../frontend
 npm install
-```
-
-### 3. Configure Environment Variables
-- **Backend:** Create `backend/.env` from `backend/.env.example`:
-  ```bash
-  cp backend/.env.example backend/.env
-  ```
-  Set `JWT_SECRET` to a secure secret key.
-
-### 4. Seed Development Role Accounts
-From the `backend` directory:
-```bash
-npm run prisma:seed
-```
-This populates the database with the 4 demo role accounts (`admin@erp.local`, `sales@erp.local`, `warehouse@erp.local`, `accounts@erp.local`).
-
-### 5. Start Backend Server
-From the `backend` directory:
-```bash
 npm run dev
 ```
-Backend API will start on `http://localhost:5000`.
-
-### 6. Start Frontend Server
-From the `frontend` directory:
-```bash
-npm run dev
-```
-Frontend will start on `http://localhost:5173`.
+- Backend REST API: `http://localhost:5000`
+- Frontend UI: `http://localhost:5173`

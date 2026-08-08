@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Mini ERP + CRM - Phase 3 Authentication & RBAC",
-    "description": "Postman collection for testing JWT Authentication and Role-Based Access Control (RBAC) endpoints across ADMIN, SALES, WAREHOUSE, and ACCOUNTS roles.",
+    "description": "Postman collection for testing JWT Authentication, User Registration, and Role-Based Access Control (RBAC) endpoints across ADMIN, SALES, WAREHOUSE, and ACCOUNTS roles.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -20,6 +20,24 @@
     {
       "name": "Auth",
       "item": [
+        {
+          "name": "Register New User",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New Sales Associate\",\n  \"email\": \"sales.new@erp.local\",\n  \"password\": \"SalesPass123!\",\n  \"role\": \"SALES\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
         {
           "name": "Login Admin",
           "request": {

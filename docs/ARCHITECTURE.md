@@ -36,7 +36,7 @@ The application uses a decoupled, full-stack architecture comprising a Node.js/E
 
 ---
 
-## 2. Authentication & Authorization Flow
+## 2. Module Execution Pipelines
 
 ### 2.1 User Login Pipeline (`POST /api/v1/auth/login`)
 
@@ -65,42 +65,39 @@ Auth Service (`authService.ts`)
           │
           ▼
 Return HTTP 200 OK
-{
-  "success": true,
-  "message": "Login successful",
-  "data": { "token": "...", "user": { "id": "...", "name": "...", "email": "...", "role": "SALES" } }
-}
 ```
 
-### 2.2 Protected Route & RBAC Authorization Pipeline
+### 2.2 Customer CRM Pipeline (Phase 4 Implemented)
 
 ```
-Client (HTTP Request with Header: Authorization: Bearer <JWT>)
+Customer UI (`CustomerListPage.tsx` / `CustomerDetailPage.tsx`)
    │
    ▼
-Routes Layer
+Axios Service (`frontend/src/services/customerService.ts`)
+   │
+   ▼ (HTTP Header: Authorization Bearer JWT)
+Customer REST API (`GET /api/v1/customers` or `POST /api/v1/customers`)
    │
    ▼
-Auth Middleware (`authenticateToken`)
-   │
-   ├─► Verify Header ("Bearer <token>") ─── Missing/Malformed ──► Return HTTP 401 Unauthorized
-   ├─► Verify Signature & Expiration (`verifyToken`) ─── Invalid/Expired ──► Return HTTP 401 Unauthorized
-   └─► Attach Payload to `req.user`
-          │
-          ▼
-Role Middleware (`authorizeRoles("ADMIN", "SALES")`)
-   │
-   ├─► Check `req.user.role` against permitted roles
-   └─► Role Not Permitted ─── Forbidden ──► Return HTTP 403 Forbidden
-          │
-          ▼ (Role Authorized)
-Controller Layer (HTTP payload parsing)
+Auth Middleware (`authenticateToken`) ── Invalid JWT ──► Return HTTP 401 Unauthorized
    │
    ▼
-Service Layer (Business Logic & Transactions)
+RBAC Middleware (`authorizeRoles("ADMIN", "SALES")`) ── Unauthorized Role ──► Return HTTP 403 Forbidden
    │
    ▼
-Prisma ORM & PostgreSQL
+Customer Controller (`customerController.ts`)
+   │
+   ▼
+Customer Validator (`customerValidator.ts`) ── Validation Failure ──► Return HTTP 400 Bad Request
+   │
+   ▼
+Customer Service (`customerService.ts`)
+   │
+   ▼
+Prisma ORM (`prisma.customer`)
+   │
+   ▼
+PostgreSQL Database
 ```
 
 ---
@@ -109,10 +106,10 @@ Prisma ORM & PostgreSQL
 
 The backend follows a clean, decoupled 5-tier architecture:
 
-1. **Routes (`/src/routes`)**: Maps URI paths (`/api/v1/auth`) to controllers and attaches `authenticateToken` / `authorizeRoles` middlewares.
+1. **Routes (`/src/routes`)**: Maps URI paths (`/api/v1/customers`) to controllers and attaches `authenticateToken` / `authorizeRoles` middlewares.
 2. **Middleware (`/src/middleware`)**: 
    - `authMiddleware.ts`: Validates Bearer token and attaches `req.user`.
    - `roleMiddleware.ts`: Enforces RBAC permissions per route.
-3. **Controllers (`/src/controllers`)**: Standard HTTP status codes (`200`, `400`, `401`, `403`, `500`) and JSON response formatting.
-4. **Services (`/src/services`)**: Business logic, password verification, JWT generation, and Prisma database queries.
+3. **Controllers (`/src/controllers`)**: Standard HTTP status codes (`200`, `201`, `400`, `401`, `403`, `404`, `500`) and JSON response formatting.
+4. **Services (`/src/services`)**: Business logic, query filtering, pagination math, and Prisma database operations.
 5. **Data Layer (`/src/db` / Prisma)**: Manages type-safe queries and schema constraints.

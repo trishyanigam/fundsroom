@@ -7,7 +7,7 @@ This document outlines the sequential 15-phase implementation plan for building 
 ## Roadmap Status Summary
 
 ```
-[✅ PHASE 0] ──► [✅ PHASE 1] ──► [✅ PHASE 2] ──► [✅ PHASE 3] ──► [⏳ PHASE 4] ──► [🔒 PHASE 5]
+[✅ PHASE 0] ──► [✅ PHASE 1] ──► [✅ PHASE 2] ──► [✅ PHASE 3] ──► [✅ PHASE 4] ──► [⏳ PHASE 5]
  Arch &           Setup &          Database         Auth &           Customer         Product
  Planning         Git Init         + Prisma         RBAC             CRM              Catalog
                                                                                         │
@@ -36,12 +36,13 @@ This document outlines the sequential 15-phase implementation plan for building 
 - **Deliverables:** Implemented password hashing with bcrypt, JWT token signing/verification (`jwt.ts`), `authenticateToken` middleware, `authorizeRoles` RBAC middleware, `POST /api/v1/auth/login`, `GET /api/v1/auth/me`, development RBAC test endpoints (`/test/admin`, `/test/sales`, `/test/warehouse`, `/test/accounts`), 4 seeded role demo accounts, unit test suite, and Postman collection.
 - **Status:** Fully completed & verified.
 
-### PHASE 4: Customer CRM Module Development (NEXT ⏳)
-- **Deliverables:** Implement CRUD REST endpoints for Customer entity (`GET`, `POST`, `PUT`), filter/search logic, and follow-up notes endpoint (`POST /customers/:id/notes`).
-- **Status:** Scheduled next.
+### PHASE 4: Customer CRM Module Development (COMPLETED ✅)
+- **Deliverables:** Implemented Customer REST APIs (`POST /customers`, `GET /customers`, `GET /customers/:id`, `PUT /customers/:id`), payload validation (`customerValidator.ts`), pagination (`page`, `limit`), multi-field search (`customerName`, `businessName`, `mobile`, `email`), filters (`status`, `customerType`), follow-up notes & date timeline, RBAC permissions (`ADMIN` & `SALES` full access, `ACCOUNTS` read-only, `WAREHOUSE` forbidden), React frontend Customer List & Detail pages, and Postman test collection.
+- **Status:** Fully completed & verified.
 
-### PHASE 5: Product Management Module (LOCKED 🔒)
+### PHASE 5: Product Management Module (NEXT ⏳)
 - **Deliverables:** Implement Product REST endpoints (`GET`, `POST`, `PUT`), unique SKU validation, minimum stock alert calculation, and warehouse location management.
+- **Status:** Scheduled next.
 
 ### PHASE 6: Inventory & Stock Movement Tracking (LOCKED 🔒)
 - **Deliverables:** Implement manual stock movement endpoint (`POST /inventory/movements`), movement audit log list endpoint (`GET /inventory/movements`), and stock validation rules.

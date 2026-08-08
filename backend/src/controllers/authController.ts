@@ -1,6 +1,55 @@
 import { Request, Response } from 'express';
-import { validateLoginInput } from '../validators/authValidator';
-import { loginUser, getUserProfile } from '../services/authService';
+import { validateLoginInput, validateRegisterInput } from '../validators/authValidator';
+import { loginUser, registerUser, getUserProfile } from '../services/authService';
+
+/**
+ * Controller: User Registration Endpoint
+ * POST /api/v1/auth/register
+ */
+export const register = async (req: Request, res: Response): Promise<void> => {
+  const validation = validateRegisterInput(req.body);
+
+  if (!validation.isValid) {
+    res.status(400).json({
+      success: false,
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: validation.message || 'Invalid registration request payload.'
+      }
+    });
+    return;
+  }
+
+  try {
+    const result = await registerUser(req.body);
+
+    if (!result.success) {
+      res.status(409).json({
+        success: false,
+        error: {
+          code: 'USER_EXISTS',
+          message: result.message || 'User registration failed.'
+        }
+      });
+      return;
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'User registered successfully',
+      data: result.data
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'An unexpected error occurred during user registration.'
+      }
+    });
+  }
+};
 
 /**
  * Controller: User Login Endpoint
