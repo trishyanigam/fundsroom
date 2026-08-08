@@ -7,7 +7,7 @@ This document outlines the sequential 15-phase implementation plan for building 
 ## Roadmap Status Summary
 
 ```
-[✅ PHASE 0] ──► [✅ PHASE 1] ──► [⏳ PHASE 2] ──► [🔒 PHASE 3] ──► [🔒 PHASE 4] ──► [🔒 PHASE 5]
+[✅ PHASE 0] ──► [✅ PHASE 1] ──► [✅ PHASE 2] ──► [⏳ PHASE 3] ──► [🔒 PHASE 4] ──► [🔒 PHASE 5]
  Arch &           Setup &          Database         Auth &           Customer         Product
  Planning         Git Init         + Prisma         RBAC             CRM              Catalog
                                                                                         │
@@ -28,12 +28,13 @@ This document outlines the sequential 15-phase implementation plan for building 
 - **Deliverables:** Initialized Git repository, established monorepo directory layout (`/backend`, `/frontend`, `/docs`, `/postman`), configured TypeScript Express REST API with `GET /api/health` endpoint, configured Vite React TypeScript frontend shell with Tailwind CSS and Axios client, set up `.gitignore` and `.env.example` templates.
 - **Status:** Fully completed & verified.
 
-### PHASE 2: Database Design, PostgreSQL & Prisma ORM (NEXT ⏳)
-- **Deliverables:** Configure Prisma schema (`schema.prisma`) with core models (`User`, `Customer`, `Product`, `StockMovement`, `Challan`, `ChallanItem`), execute database migrations (`npx prisma migrate dev`), seed database with default roles & test users.
-- **Status:** Scheduled next.
+### PHASE 2: Database Design, PostgreSQL & Prisma ORM (COMPLETED ✅)
+- **Deliverables:** Configured `backend/prisma/schema.prisma` with all 6 core models (`User`, `Customer`, `Product`, `StockMovement`, `Challan`, `ChallanItem`), enums (`Role`, `CustomerType`, `CustomerStatus`, `MovementType`, `ChallanStatus`), product snapshot preserve fields, and restrictive deletion rules (`onDelete: Restrict`). Generated Prisma Client v5 (`npx prisma generate`). Set up dev seed script (`prisma/seed.ts`).
+- **Status:** Fully completed & verified.
 
-### PHASE 3: Authentication, JWT & RBAC Middleware (LOCKED 🔒)
+### PHASE 3: Authentication, JWT & RBAC Middleware (NEXT ⏳)
 - **Deliverables:** Implement user login controller, password hashing with bcrypt, JWT token generation, `authenticateToken` middleware, and `authorizeRoles` RBAC middleware.
+- **Status:** Scheduled next.
 
 ### PHASE 4: Customer CRM Module Development (LOCKED 🔒)
 - **Deliverables:** Implement CRUD REST endpoints for Customer entity (`GET`, `POST`, `PUT`), filter/search logic, and follow-up notes endpoint (`POST /customers/:id/notes`).
