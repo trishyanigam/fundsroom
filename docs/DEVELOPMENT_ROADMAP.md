@@ -7,7 +7,7 @@ This document outlines the sequential 15-phase implementation plan for building 
 ## Roadmap Status Summary
 
 ```
-[✅ PHASE 0] ──► [✅ PHASE 1] ──► [✅ PHASE 2] ──► [⏳ PHASE 3] ──► [🔒 PHASE 4] ──► [🔒 PHASE 5]
+[✅ PHASE 0] ──► [✅ PHASE 1] ──► [✅ PHASE 2] ──► [✅ PHASE 3] ──► [⏳ PHASE 4] ──► [🔒 PHASE 5]
  Arch &           Setup &          Database         Auth &           Customer         Product
  Planning         Git Init         + Prisma         RBAC             CRM              Catalog
                                                                                         │
@@ -32,12 +32,13 @@ This document outlines the sequential 15-phase implementation plan for building 
 - **Deliverables:** Configured `backend/prisma/schema.prisma` with all 6 core models (`User`, `Customer`, `Product`, `StockMovement`, `Challan`, `ChallanItem`), enums (`Role`, `CustomerType`, `CustomerStatus`, `MovementType`, `ChallanStatus`), product snapshot preserve fields, and restrictive deletion rules (`onDelete: Restrict`). Generated Prisma Client v5 (`npx prisma generate`). Set up dev seed script (`prisma/seed.ts`).
 - **Status:** Fully completed & verified.
 
-### PHASE 3: Authentication, JWT & RBAC Middleware (NEXT ⏳)
-- **Deliverables:** Implement user login controller, password hashing with bcrypt, JWT token generation, `authenticateToken` middleware, and `authorizeRoles` RBAC middleware.
-- **Status:** Scheduled next.
+### PHASE 3: Authentication, JWT & RBAC Middleware (COMPLETED ✅)
+- **Deliverables:** Implemented password hashing with bcrypt, JWT token signing/verification (`jwt.ts`), `authenticateToken` middleware, `authorizeRoles` RBAC middleware, `POST /api/v1/auth/login`, `GET /api/v1/auth/me`, development RBAC test endpoints (`/test/admin`, `/test/sales`, `/test/warehouse`, `/test/accounts`), 4 seeded role demo accounts, unit test suite, and Postman collection.
+- **Status:** Fully completed & verified.
 
-### PHASE 4: Customer CRM Module Development (LOCKED 🔒)
+### PHASE 4: Customer CRM Module Development (NEXT ⏳)
 - **Deliverables:** Implement CRUD REST endpoints for Customer entity (`GET`, `POST`, `PUT`), filter/search logic, and follow-up notes endpoint (`POST /customers/:id/notes`).
+- **Status:** Scheduled next.
 
 ### PHASE 5: Product Management Module (LOCKED 🔒)
 - **Deliverables:** Implement Product REST endpoints (`GET`, `POST`, `PUT`), unique SKU validation, minimum stock alert calculation, and warehouse location management.

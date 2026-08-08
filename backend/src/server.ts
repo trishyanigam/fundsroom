@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import authRoutes from './routes/authRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -22,6 +23,10 @@ app.get('/api/health', (_req: Request, res: Response) => {
     message: 'Mini ERP CRM API is running'
   });
 });
+
+// Authentication Routes (Supported under /api/v1/auth and /api/auth)
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 
 // 404 Unmatched Route Handler
 app.use((_req: Request, res: Response) => {
@@ -51,6 +56,7 @@ if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
     console.log(`🚀 Mini ERP + CRM Backend running on port ${PORT}`);
     console.log(`🏥 Health Check available at http://localhost:${PORT}/api/health`);
+    console.log(`🔐 Auth Endpoints mounted at http://localhost:${PORT}/api/v1/auth`);
   });
 }
 

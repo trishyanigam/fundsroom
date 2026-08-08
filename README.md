@@ -10,9 +10,9 @@ The portal enforces role-based access control (RBAC) across four distinct intern
 
 ## Current Status
 
-**PHASE 1 - Project Setup & Foundation Complete**
+**PHASE 3 - Authentication + JWT + Role-Based Access Control (RBAC) Complete**
 
-The project infrastructure, monorepo directory layout, TypeScript Express REST API server, Vite React frontend, and environment templates are fully configured and verified. Core business models, database migrations, and CRUD endpoints will be introduced in subsequent phases.
+Stateless JWT authentication, bcrypt password hashing, Express request type extensions, authentication middleware (`authenticateToken`), authorization middleware (`authorizeRoles`), `/login`, `/me`, and role test endpoints are fully implemented and tested.
 
 ---
 
@@ -22,8 +22,9 @@ The project infrastructure, monorepo directory layout, TypeScript Express REST A
 - **Runtime:** Node.js
 - **Language:** TypeScript
 - **Web Framework:** Express.js
-- **ORM:** Prisma ORM
+- **Database ORM:** Prisma ORM
 - **Database Engine:** PostgreSQL
+- **Security:** JSON Web Tokens (`jsonwebtoken`), Bcrypt (`bcryptjs`)
 
 ### Frontend
 - **Framework:** React (v18)
@@ -34,44 +35,78 @@ The project infrastructure, monorepo directory layout, TypeScript Express REST A
 
 ---
 
+## Authentication & Role-Based Access Control (Phase 3)
+
+### Security Standards
+- **Password Security:** All passwords are hashed using `bcrypt` (10 salt rounds) before storage. Plaintext passwords and password hashes are never returned in API responses or logs.
+- **Stateless Tokens:** Authentication uses signed JSON Web Tokens (JWT) passed in the `Authorization: Bearer <token>` HTTP header.
+- **Configurable Secret & Expiration:** `JWT_SECRET` and `JWT_EXPIRES_IN` (default `24h`) are read from environment variables.
+
+### HTTP Response Standards
+- **`HTTP 401 Unauthorized`**: Authentication missing, malformed Bearer header, invalid signature, or expired token.
+- **`HTTP 403 Forbidden`**: User is authenticated, but their role lacks required permissions for the endpoint.
+
+### Development Demo Accounts
+
+The database seed script generates 4 pre-configured role test accounts with hashed passwords:
+
+| Role | Demo Email | Development Password | Allowed Scope |
+| :--- | :--- | :--- | :--- |
+| **`ADMIN`** | `admin@erp.local` | `AdminPass123!` | Full System Access |
+| **`SALES`** | `sales@erp.local` | `SalesPass123!` | Customer CRM, Products View, Challans (Draft & Confirm) |
+| **`WAREHOUSE`** | `warehouse@erp.local` | `WarehousePass123!` | Product Catalog (CRUD), Stock Movements, View Confirmed Challans |
+| **`ACCOUNTS`** | `accounts@erp.local` | `AccountsPass123!` | Read-Only Audit across All Modules |
+
+> [!WARNING]
+> Development credentials are strictly for local testing and demonstration. Real production passwords must be managed securely via environment variables (`ADMIN_SEED_PASSWORD`, etc.) and never committed to source control.
+
+---
+
 ## Project Structure
 
 ```
 mini-erp-crm/
 │
-├── backend/                  # Node.js + Express TypeScript REST API
-│   ├── prisma/               # Prisma schema & PostgreSQL datasource configuration
+├── backend/
+│   ├── prisma/
+│   │   ├── schema.prisma         # PostgreSQL schema (User, Customer, Product, StockMovement, Challan, ChallanItem)
+│   │   └── seed.ts               # Database seed script for 4 role accounts
 │   ├── src/
-│   │   ├── config/           # App configuration files
-│   │   ├── controllers/      # Route controllers (Phase 3+)
-│   │   ├── middleware/       # Auth & RBAC middleware (Phase 3+)
-│   │   ├── routes/           # REST API route definitions
-│   │   ├── services/         # Core business logic & transactions
-│   │   ├── validators/       # Request payload schemas
-│   │   ├── utils/            # Shared backend utilities
-│   │   └── server.ts         # Express server & health check entrypoint
-│   ├── .env.example          # Environment variable placeholders
-│   ├── package.json          # Backend dependencies & scripts
-│   └── tsconfig.json         # Backend TypeScript configuration
+│   │   ├── config/               # Configuration helpers
+│   │   ├── controllers/
+│   │   │   └── authController.ts # Login, me, and RBAC test controllers
+│   │   ├── middleware/
+│   │   │   ├── authMiddleware.ts # Bearer JWT token verification middleware
+│   │   │   └── roleMiddleware.ts # RBAC authorization middleware
+│   │   ├── routes/
+│   │   │   └── authRoutes.ts     # Auth endpoints (/login, /me, /test/*)
+│   │   ├── services/
+│   │   │   └── authService.ts    # Authentication business logic
+│   │   ├── types/
+│   │   │   └── express.d.ts      # Express Request type declaration (req.user)
+│   │   ├── utils/
+│   │   │   ├── jwt.ts            # JWT sign & verify functions
+│   │   │   └── password.ts       # Bcrypt hash & compare functions
+│   │   ├── validators/
+│   │   │   └── authValidator.ts  # Login payload validator
+│   │   └── server.ts             # Express server & endpoint mounting
+│   ├── .env                      # Local environment settings
+│   ├── .env.example              # Environment variable template
+│   ├── package.json              # Backend dependencies & scripts
+│   └── tsconfig.json             # Backend TypeScript configuration
 │
 ├── frontend/                 # React + Vite TypeScript SPA
 │   ├── src/
-│   │   ├── components/       # Shared UI components
-│   │   ├── context/          # Auth & App state contexts
-│   │   ├── hooks/            # Custom React hooks
-│   │   ├── layouts/          # Page frame layouts
-│   │   ├── pages/            # Application views (Phase 9+)
-│   │   ├── services/         # Axios API client (`api.ts`)
-│   │   ├── utils/            # UI helper functions
-│   │   ├── App.tsx           # Main application shell
-│   │   ├── main.tsx          # React DOM entrypoint
-│   │   └── index.css         # Tailwind CSS directives
-│   ├── .env.example          # Frontend environment placeholders
-│   ├── package.json          # Frontend dependencies & scripts
-│   ├── tailwind.config.js    # Tailwind CSS configuration
-│   └── vite.config.ts        # Vite build configuration
+│   │   ├── services/
+│   │   │   └── api.ts            # Axios API client (`api.ts`)
+│   │   ├── App.tsx               # Main application shell
+│   │   ├── main.tsx              # React DOM entrypoint
+│   │   └── vite-env.d.ts         # Vite environment types
+│   ├── .env.example              # Frontend environment placeholders
+│   ├── package.json              # Frontend dependencies
+│   └── vite.config.ts            # Vite configuration
 │
-├── docs/                     # Comprehensive Phase 0 design specifications
+├── docs/                     # Comprehensive design & architecture specifications
 │   ├── ARCHITECTURE.md
 │   ├── DATABASE_DESIGN.md
 │   ├── ROLE_PERMISSIONS.md
@@ -83,8 +118,10 @@ mini-erp-crm/
 │   ├── EDGE_CASES.md
 │   └── SUBMISSION_CHECKLIST.md
 │
-├── postman/                  # API collections placeholder
-├── .gitignore                # Root Git ignore rule set
+├── postman/                  # Postman collection
+│   └── Mini_ERP_CRM_Phase3_Auth.postman_collection.json
+│
+├── .gitignore                # Root Git ignore rules
 └── README.md                 # Project documentation overview
 ```
 
@@ -92,65 +129,47 @@ mini-erp-crm/
 
 ## Local Setup Instructions
 
-Follow these steps to set up and run the application locally:
-
 ### 1. Clone the Repository
 ```bash
-git clone <repository_url>
+git clone https://github.com/trishyanigam/fundsroom.git
 cd Fundsroom
 ```
 
-### 2. Install Backend Dependencies
+### 2. Install Dependencies
 ```bash
+# Backend dependencies
 cd backend
 npm install
-```
 
-### 3. Install Frontend Dependencies
-```bash
+# Frontend dependencies
 cd ../frontend
 npm install
 ```
 
-### 4. Configure Environment Variables
+### 3. Configure Environment Variables
 - **Backend:** Create `backend/.env` from `backend/.env.example`:
   ```bash
   cp backend/.env.example backend/.env
   ```
-- **Frontend:** Create `frontend/.env` from `frontend/.env.example`:
-  ```bash
-  cp frontend/.env.example frontend/.env
-  ```
+  Set `JWT_SECRET` to a secure secret key.
 
-### 5. Start the Backend Server
+### 4. Seed Development Role Accounts
+From the `backend` directory:
+```bash
+npm run prisma:seed
+```
+This populates the database with the 4 demo role accounts (`admin@erp.local`, `sales@erp.local`, `warehouse@erp.local`, `accounts@erp.local`).
+
+### 5. Start Backend Server
 From the `backend` directory:
 ```bash
 npm run dev
 ```
-The backend REST API server will start on `http://localhost:5000`.  
-Verify health check: `GET http://localhost:5000/api/health`
+Backend API will start on `http://localhost:5000`.
 
-### 6. Start the Frontend Development Server
-From the `frontend` directory in a new terminal window:
+### 6. Start Frontend Server
+From the `frontend` directory:
 ```bash
 npm run dev
 ```
-The React frontend application will open on `http://localhost:5173`.
-
----
-
-## Environment Variables
-
-Environment variable templates (`.env.example`) are maintained to document expected variables without exposing secrets:
-- `backend/.env.example`: Defines `PORT`, `DATABASE_URL`, `JWT_SECRET`, and `FRONTEND_URL`.
-- `frontend/.env.example`: Defines `VITE_API_URL`.
-
-*Local `.env` files are ignored by Git and must never be committed.*
-
----
-
-## Current Phase & Scope Limit
-
-> [!IMPORTANT]
-> **Current Status:** `PHASE 1 - Project Setup`
-> Business logic, authentication controllers, database migrations, customer CRM endpoints, product catalog APIs, and sales challan transactional confirmation are **NOT YET IMPLEMENTED**. These features will be built systematically starting in Phase 2.
+Frontend will start on `http://localhost:5173`.

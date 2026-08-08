@@ -1,66 +1,58 @@
 # Role & Permission Matrix Specifications
 
-This document defines the Access Control Matrix across system roles (`ADMIN`, `SALES`, `WAREHOUSE`, `ACCOUNTS`) for the **Mini ERP + CRM Operations Portal**.
+This document defines the Access Control Matrix across system roles (`ADMIN`, `SALES`, `WAREHOUSE`, `ACCOUNTS`) and documents HTTP authentication/authorization behavior for the **Mini ERP + CRM Operations Portal**.
 
 ---
 
-## 1. System Roles Overview
+## 1. HTTP 401 vs HTTP 403 Distinction
 
-| Role | Core Purpose | Typical Primary Users |
-| :--- | :--- | :--- |
-| **`ADMIN`** | Full system access, platform administration, user management, global oversight | Company Management, System Administrators |
-| **`SALES`** | Lead acquisition, customer relationship management, sales challan creation | Sales Executives, Account Managers |
-| **`WAREHOUSE`** | Physical inventory control, stock adjustments, order dispatch verification | Inventory Managers, Warehouse Staff |
-| **`ACCOUNTS`** | Financial oversight, challan audit, sales report review, compliance check | Accounting Department, Finance Officers |
+The system strictly distinguishes between authentication failures and role permission authorization failures:
+
+- **`HTTP 401 Unauthorized`**: Returned when the request is **not authenticated**.
+  - Authorization header is missing or malformed.
+  - JWT token is missing, invalid, tampered with, or expired.
+  - Client must log in to receive a valid access token.
+- **`HTTP 403 Forbidden`**: Returned when the request is **authenticated but not authorized**.
+  - The JWT token is valid and user identity is verified.
+  - The user's role (e.g. `SALES`) lacks the required permission to access the target route (e.g., `/api/v1/inventory/movements` manual stock creation).
 
 ---
 
-## 2. Comprehensive RBAC Permission Matrix
+## 2. System Roles Overview
 
-| Module / Action | ADMIN | SALES | WAREHOUSE | ACCOUNTS | Permission Type |
+| Role | Primary Purpose | Development Demo Account | Default Password |
+| :--- | :--- | :--- | :--- |
+| **`ADMIN`** | Platform administration, global oversight, full access across all business modules | `admin@erp.local` | `AdminPass123!` |
+| **`SALES`** | Lead acquisition, customer relationship management, sales challan creation | `sales@erp.local` | `SalesPass123!` |
+| **`WAREHOUSE`** | Physical inventory control, product catalog management, stock adjustments | `warehouse@erp.local` | `WarehousePass123!` |
+| **`ACCOUNTS`** | Financial oversight, challan audit, read-only sales and stock reporting | `accounts@erp.local` | `AccountsPass123!` |
+
+---
+
+## 3. Access Control Matrix
+
+| Module / Route Action | ADMIN | SALES | WAREHOUSE | ACCOUNTS | Permission Status |
 | :--- | :---: | :---: | :---: | :---: | :--- |
-| **Authentication & Profile** |
-| Login / Refresh Token | ✅ | ✅ | ✅ | ✅ | Explicit Requirement |
-| View Own User Profile | ✅ | ✅ | ✅ | ✅ | Explicit Requirement |
-| **Customer CRM** |
-| View Customer List | ✅ | ✅ | ✅ | ✅ | Explicit Requirement |
-| Search / Filter Customers | ✅ | ✅ | ✅ | ✅ | Explicit Requirement |
-| View Customer Detail | ✅ | ✅ | ✅ | ✅ | Explicit Requirement |
-| Create New Customer | ✅ | ✅ | ❌ | ❌ | Explicit Requirement |
-| Edit Customer Profile | ✅ | ✅ | ❌ | ❌ | Explicit Requirement |
-| Add Customer Follow-up Notes | ✅ | ✅ | ❌ | ❌ | Explicit Requirement |
-| Delete Customer Record | ✅ | ❌ | ❌ | ❌ | System Assumption |
-| **Product Catalog** |
-| View Product Catalog | ✅ | ✅ | ✅ | ✅ | Explicit Requirement |
-| Search Products by SKU / Category | ✅ | ✅ | ✅ | ✅ | Explicit Requirement |
-| Create New Product | ✅ | ❌ | ✅ | ❌ | Explicit Requirement |
-| Edit Product (Name, SKU, Price) | ✅ | ❌ | ✅ | ❌ | Explicit Requirement |
-| Set Minimum Stock Alert Level | ✅ | ❌ | ✅ | ❌ | System Assumption |
-| Delete Product Record | ✅ | ❌ | ❌ | ❌ | System Assumption |
-| **Inventory & Stock Movement** |
-| View Stock Movement Log | ✅ | ✅ | ✅ | ✅ | Explicit Requirement |
-| View Warehouse Stock Levels | ✅ | ✅ | ✅ | ✅ | Explicit Requirement |
-| Create Manual Stock Movement (`IN`/`OUT`) | ✅ | ❌ | ✅ | ❌ | Explicit Requirement |
-| System Automated Stock Movement (`OUT`) | ✅ | ✅ | ❌ | ❌ | Explicit (via Challan Confirmation) |
-| Adjust Warehouse Physical Location | ✅ | ❌ | ✅ | ❌ | System Assumption |
-| **Sales Challans** |
-| View Challan List & Details | ✅ | ✅ | ✅ | ✅ | Explicit Requirement |
-| Create Draft Challan | ✅ | ✅ | ❌ | ❌ | Explicit Requirement |
-| Confirm Challan (Trigger Stock Deduct) | ✅ | ✅ | ❌ | ❌ | Explicit Requirement |
-| Cancel Draft / Confirmed Challan | ✅ | ✅ | ❌ | ❌ | System Assumption |
-| Print / Export Challan Summary | ✅ | ✅ | ✅ | ✅ | System Assumption |
-
----
-
-## 3. Explicit Requirements vs. System Assumptions
-
-### Explicit Case Study Requirements
-1. **SALES Users** must have access to create and manage Customers, add follow-up notes, create Draft Challans, and trigger Challan Confirmations.
-2. **WAREHOUSE Users** must have access to create products, edit product information, view inventory, and record stock movements (`IN`/`OUT`).
-3. **Draft Challan Creation** is restricted from mutating inventory.
-4. **Challan Confirmation** triggers an automated stock check and stock reduction (`OUT` movement record creation).
-
-### Reasonable System Assumptions
-1. **ACCOUNTS Role Boundaries:** Accounts users require complete read-only visibility across Customers, Products, Inventory, and Sales Challans for audit and invoicing reconciliation, but are barred from creating draft orders or mutating inventory.
-2. **Deletion Authority:** Hard deletion of products or customers is strictly limited to the `ADMIN` role to preserve database integrity and relational constraints.
-3. **Warehouse Dispatch View:** Warehouse users can view `CONFIRMED` challans to organize physical packing and dispatch, but cannot create or modify sales orders.
+| **Authentication & Session** |
+| `POST /api/v1/auth/login` | Public | Public | Public | Public | ✅ Verified Phase 3 |
+| `GET /api/v1/auth/me` | ✅ | ✅ | ✅ | ✅ | ✅ Verified Phase 3 |
+| **RBAC Testing Endpoints** |
+| `GET /api/v1/auth/test/admin` | ✅ | ❌ (403) | ❌ (403) | ❌ (403) | ✅ Verified Phase 3 |
+| `GET /api/v1/auth/test/sales` | ✅ | ✅ | ❌ (403) | ❌ (403) | ✅ Verified Phase 3 |
+| `GET /api/v1/auth/test/warehouse` | ✅ | ❌ (403) | ✅ | ❌ (403) | ✅ Verified Phase 3 |
+| `GET /api/v1/auth/test/accounts` | ✅ | ❌ (403) | ❌ (403) | ✅ | ✅ Verified Phase 3 |
+| **Customer CRM Module (Phase 4)** |
+| View Customer List & Details | ✅ | ✅ | ✅ | ✅ | Explicit Requirement |
+| Create & Edit Customers | ✅ | ✅ | ❌ (403) | ❌ (403) | Explicit Requirement |
+| Add Customer Follow-up Notes | ✅ | ✅ | ❌ (403) | ❌ (403) | Explicit Requirement |
+| **Product Catalog (Phase 5)** |
+| View Product Catalog & Stock | ✅ | ✅ | ✅ | ✅ | Explicit Requirement |
+| Create & Edit Products | ✅ | ❌ (403) | ✅ | ❌ (403) | Explicit Requirement |
+| **Inventory Movements (Phase 6)** |
+| View Stock Movement History | ✅ | ✅ | ✅ | ✅ | Explicit Requirement |
+| Create Manual Stock Movement | ✅ | ❌ (403) | ✅ | ❌ (403) | Explicit Requirement |
+| **Sales Challans (Phase 7 & 8)** |
+| View Sales Challans | ✅ | ✅ | ✅ | ✅ | Explicit Requirement |
+| Create Draft Challan | ✅ | ✅ | ❌ (403) | ❌ (403) | Explicit Requirement |
+| Confirm Challan (Atomic Stock Deduct) | ✅ | ✅ | ❌ (403) | ❌ (403) | Explicit Requirement |
+| Cancel Challan | ✅ | ✅ | ❌ (403) | ❌ (403) | System Assumption |
