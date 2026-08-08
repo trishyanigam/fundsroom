@@ -4,60 +4,66 @@ This document details the operational business process flows for the **Mini ERP 
 
 ---
 
-## 1. Stock IN Workflow
+## 1. Create Draft Sales Challan Workflow
 
 ```
-Start (Warehouse / Admin logs Stock IN)
+Start (Sales / Admin user creates Sales Challan)
    │
    ▼
-Validate Payload (productId, quantity > 0, movementType = IN, reason)
-   │
+Validate Payload (customerId, non-empty items array, quantities > 0)
+   │ (Reject if status = "CONFIRMED")
    ▼
 Begin Prisma Interactive Transaction (`prisma.$transaction`)
    │
-   ├─► Fetch Product Record (verify product exists)
+   ├─► Verify Customer exists (Return 404 if missing)
    │
-   ├─► Increment Stock: Product.currentStock = Product.currentStock + quantity
+   ├─► For each item in items array:
+   │      ├─► Verify Product exists (Return 404 if missing)
+   │      ├─► Extract Product Snapshot: productName, sku, unitPrice
+   │      └─► Accumulate totalQuantity
    │
-   └─► Create StockMovement Audit Record (createdById = req.user.id)
+   ├─► Auto-Generate Unique Challan Number: CH-YYYY-XXXXXX
    │
-   ▼
+   └─► Create Challan (status = DRAFT) & ChallanItem snapshot records
+   │
+   ▼ (ZERO STOCK MUTATION: Stock remains untouched)
 Commit Transaction & Return HTTP 201 Created
 ```
 
 ---
 
-## 2. Stock OUT Workflow
+## 2. Edit Draft Sales Challan Workflow
 
 ```
-Start (Warehouse / Admin logs Stock OUT)
+Start (Sales / Admin edits DRAFT Challan)
    │
    ▼
-Validate Payload (productId, quantity > 0, movementType = OUT, reason)
+Check Challan Status: Is status == DRAFT?
    │
-   ▼
-Begin Prisma Interactive Transaction (`prisma.$transaction`)
+   ├─► NO (Status is CONFIRMED or CANCELLED):
+   │      └─► Return HTTP 409 Conflict ("Challan cannot be edited")
    │
-   ├─► Fetch Product Record (verify product exists)
-   │
-   ├─► Check Stock Availability: Is Product.currentStock >= quantity?
-   │      │
-   │      ├─► NO (Insufficient Stock):
-   │      │      │
-   │      │      └─► Abort & Rollback Transaction ──► Return HTTP 409 Conflict
-   │      │
-   │      └─► YES (Sufficient Stock):
-   │             │
-   │             ├─► Decrement Stock: Product.currentStock = Product.currentStock - quantity
-   │             │
-   │             └─► Create StockMovement Audit Record (createdById = req.user.id)
-   │
-   ▼
-Commit Transaction & Return HTTP 201 Created
+   └─► YES (Status is DRAFT):
+          │
+          ▼
+   Begin Transaction -> Refresh Customer & Product Snapshots -> Update Items -> Recalculate totalQuantity -> Return HTTP 200 OK
 ```
 
 ---
 
-## 3. Customer CRM & Sales Challan Integration Workflow
+## 3. Cancel Draft Sales Challan Workflow
 
-*(Sales Challans will automatically generate OUT Stock Movements upon confirmation in Phase 8).*
+```
+Start (Sales / Admin cancels DRAFT Challan)
+   │
+   ▼
+Check Challan Status: Is status == DRAFT?
+   │
+   ├─► NO (Status is CONFIRMED or CANCELLED):
+   │      └─► Return HTTP 409 Conflict ("Challan cannot be cancelled")
+   │
+   └─► YES (Status is DRAFT):
+          │
+          ▼
+   Update status = CANCELLED -> Zero Stock Mutation -> Return HTTP 200 OK
+```

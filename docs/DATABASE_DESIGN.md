@@ -29,35 +29,41 @@ The database comprises 6 core models configured in [`backend/prisma/schema.prism
 
 ## 2. Model Specifications
 
-### 2.1 StockMovement Table (`StockMovement`)
-
-The `StockMovement` table serves as an immutable, audited transaction log recording all physical stock adjustments (`IN` or `OUT`).
+### 2.1 Challan Table (`Challan`)
 
 | Field Name | Data Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
-| `id` | `UUID` | Primary Key, `default(uuid())` | Unique movement record identifier |
-| `productId` | `UUID` | Foreign Key (`Product.id`), `onDelete: Restrict` | Referenced product ID |
-| `quantity` | `Integer` | `NOT NULL`, `quantity > 0` | Quantity of stock added or removed |
-| `movementType` | `Enum` | `MovementType` (`IN`, `OUT`, `ADJUSTMENT`) | Type of stock movement |
-| `reason` | `Text` | `NOT NULL` | Business explanation / reference number |
-| `createdById` | `UUID` | Foreign Key (`User.id`), `onDelete: Restrict` | Authenticated user who executed transaction |
-| `createdAt` | `Timestamp` | `default(now())` | Transaction timestamp |
+| `id` | `UUID` | Primary Key, `default(uuid())` | Unique challan voucher identifier |
+| `challanNumber` | `String` | Unique, `CH-YYYY-XXXXXX` | Auto-generated readable challan number |
+| `customerId` | `UUID` | Foreign Key (`Customer.id`), `onDelete: Restrict` | Target customer relationship |
+| `status` | `Enum` | `ChallanStatus` (`DRAFT`, `CONFIRMED`, `CANCELLED`) | Lifecycle status |
+| `totalQuantity` | `Integer` | `NOT NULL` | Server-calculated total units sum |
+| `createdById` | `UUID` | Foreign Key (`User.id`), `onDelete: Restrict` | User who generated voucher |
+| `createdAt` | `Timestamp` | `default(now())` | Creation timestamp |
+
+### 2.2 ChallanItem Table (`ChallanItem`) - Product Historical Snapshot
+
+| Field Name | Data Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | Primary Key, `default(uuid())` | Line item identifier |
+| `challanId` | `UUID` | Foreign Key (`Challan.id`), `onDelete: Cascade` | Parent challan reference |
+| `productId` | `UUID` | Foreign Key (`Product.id`), `onDelete: Restrict` | Referenced catalog product ID |
+| `productName` | `String` | `NOT NULL` | **Frozen product name snapshot** |
+| `sku` | `String` | `NOT NULL` | **Frozen product SKU snapshot** |
+| `unitPrice` | `Decimal` | `@db.Decimal(12, 2)` | **Frozen unit price snapshot** |
+| `quantity` | `Integer` | `NOT NULL`, `quantity > 0` | Quantity ordered for this item |
 
 ---
 
-## 3. Stock Movement Business Semantics & Immutability Policy
+## 3. Product Historical Snapshot Architecture
 
-### 3.1 Transactional Atomicity
-All stock adjustments (`IN` or `OUT`) are executed inside interactive Prisma Transactions (`prisma.$transaction`).
-- **`IN` Movement**: Increments `Product.currentStock` by `quantity` AND creates `StockMovement` record atomically.
-- **`OUT` Movement**: Validates `Product.currentStock >= quantity`. Decrements `Product.currentStock` by `quantity` AND creates `StockMovement` record atomically.
-- **Rollback Guarantee**: If stock is insufficient or movement creation fails, the entire transaction rolls back cleanly so stock never changes without a corresponding movement log.
+To guarantee historical financial and audit accuracy, `ChallanItem` stores frozen copies of `productName`, `sku`, and `unitPrice` captured at the moment of creation/update.
+- Even if a product is later renamed or repriced in the Product catalog, historical challan vouchers retain the original price, name, and SKU as of voucher generation.
 
-### 3.2 Negative Stock Prevention
-Stock must **NEVER** drop below zero. Excessive `OUT` movement requests are rejected immediately with `409 Conflict` before any database modifications take place.
+---
 
-### 3.3 Historical Record Immutability Policy
-Stock Movement records are immutable audit logs.
-- **No Editing (`PUT`)**: API clients cannot alter past stock movements.
-- **No Deletion (`DELETE`)**: Historical movement records cannot be purged.
-- **Correction Strategy**: If a clerical error occurs, a new corrective stock movement (`IN` or `OUT`) must be logged.
+## 4. Challan Number Generation Strategy
+
+- **Format:** `CH-YYYY-XXXXXX` (e.g. `CH-2026-000001`).
+- **Generation:** Derived server-side within the `prisma.$transaction` block using sequence counts.
+- **Race Condition Prevention:** Database `UNIQUE` constraint on `challanNumber` provides final protection against duplicate numbers under concurrent requests.

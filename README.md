@@ -10,9 +10,11 @@ The portal enforces role-based access control (RBAC) across four distinct intern
 
 ## Current Status
 
-**PHASE 6 - Inventory & Stock Movements Module Complete**
+**PHASE 7 - Sales Challan Management Module Complete**
 
-Inventory REST APIs, payload validation, Prisma interactive transactions (`prisma.$transaction`), negative stock prevention (`409 Conflict`), historical audit log immutability (no `PUT`/`DELETE`), JWT `createdById` attribution, role-based authorization (`ADMIN` & `WAREHOUSE` full access; `SALES` & `ACCOUNTS` read-only), React Inventory audit log page & movement modal, and Postman collection are fully implemented and verified.
+Sales Challan REST APIs, payload validation, auto-generated unique challan numbers (`CH-YYYY-XXXXXX`), historical product price & SKU snapshot preservation, zero stock mutation on draft operations, role-based authorization (`ADMIN` & `SALES` full draft access; `WAREHOUSE` & `ACCOUNTS` read-only), React Sales Challan List, Form, & Detail pages, and Postman collection are fully implemented and verified.
+
+*(Note: Sales Challan confirmation and transactional stock deduction will be implemented in Phase 8).*
 
 ---
 
@@ -44,13 +46,18 @@ Inventory REST APIs, payload validation, Prisma interactive transactions (`prism
 
 ### 2. Product Management Module (Phase 5)
 - **APIs:** `POST /api/v1/products`, `GET /api/v1/products`, `GET /api/v1/products/:id`, `PUT /api/v1/products/:id`
-- **Features:** Catalog SKU management, unique SKU collision prevention (`409 Conflict`), category & warehouse bin location filters, low-stock filter alerts (`currentStock <= minimumStock`), stock update immunity (insulates stock from arbitrary metadata edits).
+- **Features:** Catalog SKU management, unique SKU collision prevention (`409 Conflict`), category & warehouse bin location filters, low-stock filter alerts (`currentStock <= minimumStock`), stock update immunity.
 - **RBAC:** `ADMIN` & `WAREHOUSE` (Full CRUD), `SALES` & `ACCOUNTS` (Read-only).
 
 ### 3. Inventory & Stock Movements Module (Phase 6)
 - **APIs:** `POST /api/v1/inventory/movements`, `GET /api/v1/inventory/movements`, `GET /api/v1/inventory/movements/:id`
-- **Features:** Transactional Stock IN (+) and Stock OUT (-) logged within Prisma interactive transactions (`prisma.$transaction`), negative stock rejection (`409 Conflict`), immutable audit history (no `PUT`/`DELETE`), product & date range filtering, authenticated JWT `createdById` attribution.
+- **Features:** Transactional Stock IN (+) and Stock OUT (-) logged within Prisma interactive transactions (`prisma.$transaction`), negative stock rejection (`409 Conflict`), immutable audit history, authenticated JWT `createdById` attribution.
 - **RBAC:** `ADMIN` & `WAREHOUSE` (Create & View), `SALES` & `ACCOUNTS` (Audit Log Read-Only).
+
+### 4. Sales Challan Management Module (Phase 7)
+- **APIs:** `POST /api/v1/challans`, `GET /api/v1/challans`, `GET /api/v1/challans/:id`, `PUT /api/v1/challans/:id`, `PUT /api/v1/challans/:id/cancel`
+- **Features:** Auto-generated unique challan numbers (`CH-YYYY-XXXXXX`), historical product snapshot preservation (`productName`, `sku`, `unitPrice`), server-side `totalQuantity` summation, editing and cancelling draft vouchers with zero stock mutation.
+- **RBAC:** `ADMIN` & `SALES` (Draft Create, Edit & Cancel), `WAREHOUSE` & `ACCOUNTS` (Read-Only).
 
 ---
 
@@ -61,8 +68,8 @@ The database seed script generates 4 pre-configured role test accounts with hash
 | Role | Demo Email | Development Password | Allowed Scope |
 | :--- | :--- | :--- | :--- |
 | **`ADMIN`** | `admin@erp.local` | `AdminPass123!` | Full System Access Across All Modules |
-| **`SALES`** | `sales@erp.local` | `SalesPass123!` | Customer CRM, Products View, Audit Trail View |
-| **`WAREHOUSE`** | `warehouse@erp.local` | `WarehousePass123!` | Product Catalog (CRUD), Stock Movements (IN/OUT) |
+| **`SALES`** | `sales@erp.local` | `SalesPass123!` | Customer CRM, Products View, Sales Challans (Draft & Edit) |
+| **`WAREHOUSE`** | `warehouse@erp.local` | `WarehousePass123!` | Product Catalog (CRUD), Stock Movements (IN/OUT), Challans View |
 | **`ACCOUNTS`** | `accounts@erp.local` | `AccountsPass123!` | Read-Only Audit across All Modules |
 
 ---
