@@ -7,13 +7,13 @@ This document outlines the sequential 15-phase implementation plan for building 
 ## Roadmap Status Summary
 
 ```
-[✅ PHASE 0] ──► [✅ PHASE 1] ──► [✅ PHASE 2] ──► [✅ PHASE 3] ──► [✅ PHASE 4] ──► [✅ PHASE 5] ──► [⏳ PHASE 6]
- Arch &           Setup &          Database         Auth &           Customer         Product          Inventory
- Planning         Git Init         + Prisma         RBAC             CRM              Catalog          Movements
-                                                                                                        │
-[🔒 PHASE 14] ◄─ [🔒 PHASE 13] ◄─ [🔒 PHASE 12] ◄─ [🔒 PHASE 11] ◄─ [🔒 PHASE 10] ◄─ [🔒 PHASE 9]  ◄─ [🔒 PHASE 8] ◄─ [🔒 PHASE 7]
- Final Audit      Docs &           Deployment       Testing &        Frontend-        React UI &       Atomic Stock     Sales
-                  Submission                        Postman          Backend Int      Dashboard        Confirmation     Challans
+[✅ PHASE 0] ──► [✅ PHASE 1] ──► [✅ PHASE 2] ──► [✅ PHASE 3] ──► [✅ PHASE 4] ──► [✅ PHASE 5] ──► [✅ PHASE 6] ──► [⏳ PHASE 7]
+ Arch &           Setup &          Database         Auth &           Customer         Product          Inventory        Sales
+ Planning         Git Init         + Prisma         RBAC             CRM              Catalog          Movements        Challans
+                                                                                                                        │
+[🔒 PHASE 14] ◄─ [🔒 PHASE 13] ◄─ [🔒 PHASE 12] ◄─ [🔒 PHASE 11] ◄─ [🔒 PHASE 10] ◄─ [🔒 PHASE 9]  ◄─ [🔒 PHASE 8] ◄────┘
+ Final Audit      Docs &           Deployment       Testing &        Frontend-        React UI &       Atomic Stock
+                  Submission                        Postman          Backend Int      Dashboard        Confirmation
 ```
 
 ---
@@ -21,53 +21,30 @@ This document outlines the sequential 15-phase implementation plan for building 
 ## Detailed Phase Breakdown
 
 ### PHASE 0: Architecture & System Planning (COMPLETED ✅)
-- **Deliverables:** Architectural specifications, ERD, database design, REST API blueprints, RBAC permission matrix, business process flowcharts, edge-case documentation, submission checklist, and `README.md`.
 - **Status:** Fully completed.
 
 ### PHASE 1: Project Setup & Repository Initialization (COMPLETED ✅)
-- **Deliverables:** Initialized Git repository, established monorepo directory layout (`/backend`, `/frontend`, `/docs`, `/postman`), configured TypeScript Express REST API with `GET /api/health` endpoint, configured Vite React TypeScript frontend shell with Tailwind CSS and Axios client, set up `.gitignore` and `.env.example` templates.
 - **Status:** Fully completed & verified.
 
 ### PHASE 2: Database Design, PostgreSQL & Prisma ORM (COMPLETED ✅)
-- **Deliverables:** Configured `backend/prisma/schema.prisma` with all 6 core models (`User`, `Customer`, `Product`, `StockMovement`, `Challan`, `ChallanItem`), enums (`Role`, `CustomerType`, `CustomerStatus`, `MovementType`, `ChallanStatus`), product snapshot preserve fields, and restrictive deletion rules (`onDelete: Restrict`). Generated Prisma Client v5 (`npx prisma generate`). Set up dev seed script (`prisma/seed.ts`).
 - **Status:** Fully completed & verified.
 
 ### PHASE 3: Authentication, JWT & RBAC Middleware (COMPLETED ✅)
-- **Deliverables:** Implemented password hashing with bcrypt, JWT token signing/verification (`jwt.ts`), `authenticateToken` middleware, `authorizeRoles` RBAC middleware, `POST /api/v1/auth/login`, `GET /api/v1/auth/me`, development RBAC test endpoints (`/test/admin`, `/test/sales`, `/test/warehouse`, `/test/accounts`), 4 seeded role demo accounts, unit test suite, and Postman collection.
 - **Status:** Fully completed & verified.
 
 ### PHASE 4: Customer CRM Module Development (COMPLETED ✅)
-- **Deliverables:** Implemented Customer REST APIs (`POST /customers`, `GET /customers`, `GET /customers/:id`, `PUT /customers/:id`), payload validation (`customerValidator.ts`), pagination (`page`, `limit`), multi-field search (`customerName`, `businessName`, `mobile`, `email`), filters (`status`, `customerType`), follow-up notes & date timeline, RBAC permissions (`ADMIN` & `SALES` full access, `ACCOUNTS` read-only, `WAREHOUSE` forbidden), React frontend Customer List & Detail pages, and Postman test collection.
 - **Status:** Fully completed & verified.
 
 ### PHASE 5: Product Management Module (COMPLETED ✅)
-- **Deliverables:** Implemented Product REST APIs (`POST /products`, `GET /products`, `GET /products/:id`, `PUT /products/:id`), unique SKU collision validation (`409 Conflict`), low-stock filter logic (`currentStock <= minimumStock`), direct stock edit immunity rules on update, RBAC permissions (`ADMIN` & `WAREHOUSE` full access; `SALES` & `ACCOUNTS` read-only), React Product List & Detail pages with low-stock warning badges, and Postman collection.
 - **Status:** Fully completed & verified.
 
-### PHASE 6: Inventory & Stock Movement Tracking (NEXT ⏳)
-- **Deliverables:** Implement manual stock movement creation endpoint (`POST /inventory/movements`), stock movement audit log list endpoint (`GET /inventory/movements`), stock validation rules, and inventory movement history UI.
-- **Status:** Scheduled next.
+### PHASE 6: Inventory & Stock Movement Tracking (COMPLETED ✅)
+- **Deliverables:** Implemented Stock Movement REST APIs (`POST /inventory/movements`, `GET /inventory/movements`, `GET /inventory/movements/:id`), Prisma interactive transactions (`prisma.$transaction`), negative stock prevention (`409 Conflict`), historical audit log immutability (no `PUT`/`DELETE`), RBAC permissions (`ADMIN` & `WAREHOUSE` full access; `SALES` & `ACCOUNTS` read-only), React Inventory audit log page & movement modal, and Postman collection.
+- **Status:** Fully completed & verified.
 
-### PHASE 7: Sales Challan Core Management (LOCKED 🔒)
+### PHASE 7: Sales Challan Core Management (NEXT ⏳)
 - **Deliverables:** Implement Challan listing, detail retrieval, and draft challan creation endpoint (`POST /challans`) with historical product snapshot resolution (`productName`, `sku`, `unitPrice`). Verify zero stock mutation on `DRAFT`.
+- **Status:** Scheduled next.
 
 ### PHASE 8: Challan Confirmation & Transactional Stock Logic (LOCKED 🔒)
 - **Deliverables:** Implement `POST /challans/:id/confirm` endpoint wrapped in Prisma interactive transaction (`prisma.$transaction`). Verify multi-item atomic stock verification, stock reduction, automated `OUT` stock movement creation, and rollback behavior on insufficient stock.
-
-### PHASE 9: React Dashboard & UI Components (LOCKED 🔒)
-- **Deliverables:** Build layout frames, metrics dashboard cards (low stock alerts, sales volume, top clients), and modular UI components.
-
-### PHASE 10: Frontend & Backend Integration (LOCKED 🔒)
-- **Deliverables:** Connect all React pages with backend REST APIs across Customer CRM, Product Catalog, Inventory, and Sales Challans.
-
-### PHASE 11: Validation, Testing & Postman Collection (LOCKED 🔒)
-- **Deliverables:** Perform multi-product transaction edge-case testing and assemble complete Postman collection.
-
-### PHASE 12: Deployment & Cloud Configuration (LOCKED 🔒)
-- **Deliverables:** Deploy PostgreSQL database to Neon / Supabase, Express backend to Render, Vite React frontend to Vercel.
-
-### PHASE 13: Final Documentation & Setup Guide Update (LOCKED 🔒)
-- **Deliverables:** Update `README.md` and `docs/SUBMISSION_CHECKLIST.md` with live production URLs and test credentials.
-
-### PHASE 14: Final Submission Audit (LOCKED 🔒)
-- **Deliverables:** End-to-end verification of all submission criteria.

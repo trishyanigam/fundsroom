@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes';
 import customerRoutes from './routes/customerRoutes';
 import productRoutes from './routes/productRoutes';
+import inventoryRoutes from './routes/inventoryRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -38,6 +39,10 @@ app.use('/api/customers', customerRoutes);
 app.use('/api/v1/products', productRoutes);
 app.use('/api/products', productRoutes);
 
+// Inventory & Stock Movement Routes
+app.use('/api/v1/inventory/movements', inventoryRoutes);
+app.use('/api/inventory/movements', inventoryRoutes);
+
 // 404 Unmatched Route Handler
 app.use((_req: Request, res: Response) => {
   res.status(404).json({
@@ -69,6 +74,7 @@ if (process.env.NODE_ENV !== 'test') {
     console.log(`🔐 Auth Endpoints mounted at http://localhost:${PORT}/api/v1/auth`);
     console.log(`👥 Customer CRM Endpoints mounted at http://localhost:${PORT}/api/v1/customers`);
     console.log(`📦 Product Catalog Endpoints mounted at http://localhost:${PORT}/api/v1/products`);
+    console.log(`🏭 Inventory Endpoints mounted at http://localhost:${PORT}/api/v1/inventory/movements`);
   });
 }
 

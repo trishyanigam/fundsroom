@@ -15,7 +15,7 @@ This document defines the RESTful API endpoints, HTTP request/response payloads,
 
 ## 2. Authentication Endpoints (Phase 3 - Implemented ✅)
 
-- `POST /api/v1/auth/register` — Registers new user account (`ADMIN`, `SALES`, `WAREHOUSE`, `ACCOUNTS`).
+- `POST /api/v1/auth/register` — Registers new user account.
 - `POST /api/v1/auth/login` — User login & JWT generation.
 - `GET /api/v1/auth/me` — Get current user profile.
 - `GET /api/v1/auth/test/admin`, `/sales`, `/warehouse`, `/accounts` — RBAC test routes.
@@ -33,72 +33,62 @@ This document defines the RESTful API endpoints, HTTP request/response payloads,
 
 ## 4. Product Catalog Endpoints (Phase 5 - Implemented ✅)
 
-### 4.1 List / Search / Filter Products
-- **Endpoint:** `GET /api/v1/products` (and `/api/products`)
+- `POST /api/v1/products` — Create product record (Unique SKU enforced, `409 Conflict`).
+- `GET /api/v1/products` — List/search/filter products (`page`, `limit`, `search`, `category`, `warehouseLocation`, `lowStock`).
+- `GET /api/v1/products/:id` — Get product profile by ID.
+- `PUT /api/v1/products/:id` — Update product metadata (Insulates `currentStock` from direct editing).
+
+---
+
+## 5. Inventory & Stock Movement Endpoints (Phase 6 - Implemented ✅)
+
+### 5.1 Create Stock Movement (IN or OUT)
+- **Endpoint:** `POST /api/v1/inventory/movements` (and `/api/inventory/movements`)
+- **Access:** `ADMIN`, `WAREHOUSE` (`SALES` & `ACCOUNTS` return `403 Forbidden`)
+- **Transaction Guarantee:** Executed within interactive Prisma Transaction (`prisma.$transaction`). Atomically adjusts `Product.currentStock` and creates `StockMovement`.
+- **Negative Stock Protection:** For `OUT` movements, if `currentStock < quantity`, returns `409 Conflict` (or `400 Bad Request`) and rolls back the transaction.
+- **Created By Attrib:** `createdById` bound to authenticated JWT user ID.
+- **Request Body:**
+  ```json
+  {
+    "productId": "prod_101",
+    "quantity": 50,
+    "movementType": "IN",
+    "reason": "New stock shipment received from vendor"
+  }
+  ```
+- **Success Response (`201 Created`):** Returns created stock movement record.
+
+### 5.2 Get Stock Movements Audit Log
+- **Endpoint:** `GET /api/v1/inventory/movements` (and `/api/inventory/movements`)
 - **Access:** Authenticated (`ADMIN`, `WAREHOUSE`, `SALES`, `ACCOUNTS` allowed)
-- **Query Params:**
-  - `page` (default: 1)
-  - `limit` (default: 10, max: 100)
-  - `search` (searches `name`, `sku`, `category`)
-  - `category` (exact string match)
-  - `warehouseLocation` (exact location match)
-  - `lowStock` (`true` returns products where `currentStock <= minimumStock`)
+- **Query Params:** `page`, `limit`, `productId`, `movementType` (`IN`/`OUT`), `fromDate`, `toDate`.
 - **Success Response (`200 OK`):**
   ```json
   {
     "success": true,
     "data": [
       {
-        "id": "prod_101",
-        "name": "Laptop Stand Ergonomic",
-        "sku": "LAP-STAND-001",
-        "category": "Electronics",
-        "unitPrice": 1850.00,
-        "currentStock": 25,
-        "minimumStock": 5,
-        "warehouseLocation": "Delhi Main Warehouse - Shelf B1"
+        "id": "mov_101",
+        "productId": "prod_101",
+        "quantity": 50,
+        "movementType": "IN",
+        "reason": "New stock shipment received from vendor",
+        "createdAt": "2026-08-08T12:00:00.000Z",
+        "product": { "name": "Laptop Stand Ergonomic", "sku": "LAP-STAND-001" },
+        "createdBy": { "name": "Warehouse Admin", "email": "warehouse@erp.local" }
       }
     ],
     "pagination": { "page": 1, "limit": 10, "total": 1, "totalPages": 1 }
   }
   ```
 
-### 4.2 Get Product Detail
-- **Endpoint:** `GET /api/v1/products/:id` (and `/api/products/:id`)
+### 5.3 Get Stock Movement Detail
+- **Endpoint:** `GET /api/v1/inventory/movements/:id` (and `/api/inventory/movements/:id`)
 - **Access:** Authenticated (`ADMIN`, `WAREHOUSE`, `SALES`, `ACCOUNTS` allowed)
-- **Success Response (`200 OK`):** Returns single product object.
-- **Failure Response (`404 Not Found`):** `{ "success": false, "message": "Product not found" }`
+- **Success Response (`200 OK`):** Returns single movement audit record.
 
-### 4.3 Create Product
-- **Endpoint:** `POST /api/v1/products` (and `/api/products`)
-- **Access:** `ADMIN`, `WAREHOUSE` (`SALES` & `ACCOUNTS` return `403 Forbidden`)
-- **Request Body:**
-  ```json
-  {
-    "name": "Laptop Stand Ergonomic",
-    "sku": "LAP-STAND-001",
-    "category": "Electronics",
-    "unitPrice": 1850.00,
-    "currentStock": 25,
-    "minimumStock": 5,
-    "warehouseLocation": "Delhi Main Warehouse - Shelf B1"
-  }
-  ```
-- **Success Response (`201 Created`):** Returns created product record.
-- **Duplicate SKU Collision (`409 Conflict`):** `{ "success": false, "message": "Product SKU already exists" }`
-
-### 4.4 Update Product Metadata (Excludes Stock Edits)
-- **Endpoint:** `PUT /api/v1/products/:id` (and `/api/products/:id`)
-- **Access:** `ADMIN`, `WAREHOUSE` (`SALES` & `ACCOUNTS` return `403 Forbidden`)
-- **Restriction:** Direct modification of `currentStock` via update endpoint is restricted to preserve inventory integrity. Stock movements are managed via Phase 6 Inventory module.
-- **Success Response (`200 OK`):** Returns updated product record.
-
----
-
-## 5. Inventory Endpoints (Phase 6 - Planned)
-
-- `GET /api/v1/inventory/movements`
-- `POST /api/v1/inventory/movements`
+*(Note: Stock Movements are immutable audit records. No PUT or DELETE endpoints exist.)*
 
 ---
 

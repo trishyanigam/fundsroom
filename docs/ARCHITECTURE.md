@@ -39,65 +39,21 @@ The application uses a decoupled, full-stack architecture comprising a Node.js/E
 ## 2. Module Execution Pipelines
 
 ### 2.1 User Login Pipeline (`POST /api/v1/auth/login`)
+`Client -> Routes -> Auth Controller -> Service -> Bcrypt -> JWT -> Return HTTP 200 OK`
+
+### 2.2 Customer CRM Pipeline (`POST /api/v1/customers`)
+`Customer UI -> Axios -> Customer API -> Auth/RBAC -> Controller -> Service -> Prisma ORM -> PostgreSQL`
+
+### 2.3 Product Management Pipeline (`POST /api/v1/products`)
+`Product UI -> Axios -> Product API -> Auth/RBAC -> Controller -> Service (SKU Check) -> Prisma ORM -> PostgreSQL`
+
+### 2.4 Inventory & Stock Movements Pipeline (`POST /api/v1/inventory/movements`)
 
 ```
-Client (JSON Body: email, password)
-   │
-   ▼
-Routes Layer (`authRoutes.ts`)
-   │
-   ▼
-Auth Controller (`authController.ts`)
-   │
-   ▼
-Validator (`validateLoginInput`) ─── Invalid Format ──► Return HTTP 400 Bad Request
-   │ (Valid Format)
-   ▼
-Auth Service (`authService.ts`)
-   │
-   ├─► Prisma ORM (`prisma.user.findUnique`)
-   │      │
-   │      └─► PostgreSQL DB (Fetch user record by email)
-   │
-   ├─► Bcrypt Verification (`comparePassword`) ─── Invalid Match ──► Return HTTP 401 Unauthorized
-   │
-   └─► JWT Signing (`generateToken`)
-          │
-          ▼
-Return HTTP 200 OK
-```
-
-### 2.2 Customer CRM Pipeline (Phase 4 Implemented)
-
-```
-Customer UI (`CustomerListPage.tsx` / `CustomerDetailPage.tsx`)
-   │
-   ▼
-Axios Service (`frontend/src/services/customerService.ts`)
+Inventory UI (`InventoryPage.tsx` / `MovementFormModal.tsx`)
    │
    ▼ (HTTP Header: Authorization Bearer JWT)
-Customer REST API (`GET /api/v1/customers` or `POST /api/v1/customers`)
-   │
-   ▼
-Auth Middleware (`authenticateToken`) ── Invalid JWT ──► Return HTTP 401 Unauthorized
-   │
-   ▼
-RBAC Middleware (`authorizeRoles("ADMIN", "SALES")`) ── Unauthorized Role ──► Return HTTP 403 Forbidden
-   │
-   ▼
-Customer Controller (`customerController.ts`) ── Service ──► Prisma ORM ──► PostgreSQL DB
-```
-
-### 2.3 Product Management Pipeline (Phase 5 Implemented)
-
-```
-Product UI (`ProductListPage.tsx` / `ProductDetailPage.tsx`)
-   │
-   ▼
-Axios Service (`frontend/src/services/productService.ts`)
-   │
-   ▼ (HTTP Header: Authorization Bearer JWT)
-Product REST API (`GET /api/v1/products` or `POST /api/v1/products`)
+Inventory REST API (`POST /api/v1/inventory/movements`)
    │
    ▼
 Auth Middleware (`authenticateToken`) ── Invalid JWT ──► Return HTTP 401 Unauthorized
@@ -106,29 +62,30 @@ Auth Middleware (`authenticateToken`) ── Invalid JWT ──► Return HTTP 4
 RBAC Middleware (`authorizeRoles("ADMIN", "WAREHOUSE")`) ── Unauthorized Role ──► Return HTTP 403 Forbidden
    │
    ▼
-Product Controller (`productController.ts`)
+Inventory Controller (`inventoryController.ts`)
    │
    ▼
-Product Validator (`productValidator.ts`) ── Stock Edit Attempt or Invalid Payload ──► Return HTTP 400 Bad Request
+Inventory Validator (`inventoryValidator.ts`) ── Invalid Payload ──► Return HTTP 400 Bad Request
    │
    ▼
-Product Service (`productService.ts`) ── Duplicate SKU ──► Return HTTP 409 Conflict
+Inventory Service (`inventoryService.ts`)
    │
    ▼
-Prisma ORM (`prisma.product`)
+Prisma Interactive Transaction (`prisma.$transaction`)
+   ├── 1. Check Product existence & stock availability (If OUT & Stock < Qty -> Rollback -> HTTP 409)
+   ├── 2. Atomic Stock Update (`Product.currentStock` +/- quantity)
+   └── 3. Create StockMovement Audit Record (`createdById = req.user.id`)
    │
    ▼
-PostgreSQL Database
+PostgreSQL Database (Committed Atomically)
 ```
 
 ---
 
 ## 3. Backend Layered Architecture
 
-The backend follows a clean, decoupled 5-tier architecture:
-
-1. **Routes (`/src/routes`)**: Maps URI paths (`/api/v1/products`) to controllers and attaches `authenticateToken` / `authorizeRoles` middlewares.
+1. **Routes (`/src/routes`)**: Maps URI paths (`/api/v1/inventory/movements`) and attaches `authenticateToken` / `authorizeRoles` middlewares.
 2. **Middleware (`/src/middleware`)**: `authMiddleware.ts` (JWT token verify) and `roleMiddleware.ts` (RBAC rules).
 3. **Controllers (`/src/controllers`)**: HTTP status codes (`200`, `201`, `400`, `401`, `403`, `404`, `409`, `500`).
-4. **Services (`/src/services`)**: Business logic, SKU collision checks, low-stock filter logic, and Prisma queries.
+4. **Services (`/src/services`)**: Business logic, Prisma interactive transactions, and audit log queries.
 5. **Data Layer (`/src/db` / Prisma)**: Type-safe database persistence.

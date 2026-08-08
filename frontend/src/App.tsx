@@ -4,13 +4,14 @@ import { CustomerListPage } from './pages/CustomerListPage';
 import { CustomerDetailPage } from './pages/CustomerDetailPage';
 import { ProductListPage } from './pages/ProductListPage';
 import { ProductDetailPage } from './pages/ProductDetailPage';
+import { InventoryPage } from './pages/InventoryPage';
 
 export const App: React.FC = () => {
   const [apiHealthStatus, setApiHealthStatus] = useState<string>('Checking...');
   const [isHealthy, setIsHealthy] = useState<boolean | null>(null);
 
   // Active View State
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'customers' | 'customerDetail' | 'products' | 'productDetail'>('products');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'customers' | 'customerDetail' | 'products' | 'productDetail' | 'inventory'>('inventory');
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
@@ -100,7 +101,7 @@ export const App: React.FC = () => {
             </button>
           )}
 
-          {/* Products Tab (All roles allowed) */}
+          {/* Products Tab */}
           <button
             onClick={() => {
               setSelectedProductId(null);
@@ -113,14 +114,23 @@ export const App: React.FC = () => {
             }`}
           >
             <span>Product Management</span>
-            <span className="text-[10px] bg-sky-500/20 text-sky-300 border border-sky-500/30 px-1.5 py-0.5 rounded">
-              Phase 5
+          </button>
+
+          {/* Inventory Management Tab (All roles allowed) */}
+          <button
+            onClick={() => setActiveTab('inventory')}
+            className={`w-full text-left px-3 py-2 text-sm rounded font-medium flex items-center justify-between transition-colors ${
+              activeTab === 'inventory'
+                ? 'bg-slate-800 text-white'
+                : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+            }`}
+          >
+            <span>Inventory Movements</span>
+            <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded">
+              Phase 6
             </span>
           </button>
 
-          <div className="px-3 py-2 text-sm rounded text-slate-500 cursor-not-allowed">
-            Inventory (Phase 6)
-          </div>
           <div className="px-3 py-2 text-sm rounded text-slate-500 cursor-not-allowed">
             Sales Challans (Phase 7)
           </div>
@@ -135,9 +145,9 @@ export const App: React.FC = () => {
             className="w-full bg-slate-800 text-white border border-slate-700 rounded px-2 py-1.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-sky-500"
           >
             <option value="ADMIN">ADMIN (Full Access)</option>
-            <option value="WAREHOUSE">WAREHOUSE (Products CRUD)</option>
-            <option value="SALES">SALES (Products Read-Only)</option>
-            <option value="ACCOUNTS">ACCOUNTS (Products Read-Only)</option>
+            <option value="WAREHOUSE">WAREHOUSE (Log IN/OUT Movements)</option>
+            <option value="SALES">SALES (Audit Trail Read-Only)</option>
+            <option value="ACCOUNTS">ACCOUNTS (Audit Trail Read-Only)</option>
           </select>
         </div>
       </aside>
@@ -154,8 +164,8 @@ export const App: React.FC = () => {
           </div>
 
           <div className="flex items-center space-x-3">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-sky-100 text-sky-800 border border-sky-200">
-              Phase 5 - Product Catalog Complete
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+              Phase 6 - Inventory Movements Complete
             </span>
             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-slate-900 text-white">
               Role: {currentRole}
@@ -172,7 +182,7 @@ export const App: React.FC = () => {
                   Mini ERP + CRM Operations Portal
                 </h3>
                 <p className="text-slate-300 text-sm leading-relaxed max-w-2xl">
-                  Phase 5 Product Management active. Manage catalog SKUs, unit pricing, warehouse bin locations, and low-stock alerts.
+                  Phase 6 Inventory Management active. Track transactional IN and OUT stock movements with row-level negative stock protection and Prisma transaction atomicity.
                 </p>
               </div>
 
@@ -199,11 +209,11 @@ export const App: React.FC = () => {
 
                 <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
                   <div>
-                    <h4 className="text-sm font-semibold text-slate-700 mb-2">Product Catalog Module</h4>
+                    <h4 className="text-sm font-semibold text-slate-700 mb-2">Inventory Movements Module</h4>
                     <ul className="text-xs text-slate-600 space-y-1.5 list-disc list-inside">
-                      <li>Catalog SKUs & Warehouse Locations</li>
-                      <li>Low-Stock Filter Alerts (`currentStock &lt;= minimumStock`)</li>
-                      <li>Direct Stock Edit Immunity (Phase 6 Inventory handles stock movements)</li>
+                      <li>Transactional Stock IN (+) and Stock OUT (-)</li>
+                      <li>Strict Negative Stock Prevention (Rollbacks on insufficient stock)</li>
+                      <li>Immutable Audit Trail & JWT User Attribution</li>
                     </ul>
                   </div>
                 </div>
@@ -239,6 +249,10 @@ export const App: React.FC = () => {
               userRole={currentRole}
               onBack={handleBackToProductList}
             />
+          )}
+
+          {activeTab === 'inventory' && (
+            <InventoryPage userRole={currentRole} />
           )}
         </main>
       </div>

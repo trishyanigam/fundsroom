@@ -10,9 +10,9 @@ The portal enforces role-based access control (RBAC) across four distinct intern
 
 ## Current Status
 
-**PHASE 5 - Product Management Module Complete**
+**PHASE 6 - Inventory & Stock Movements Module Complete**
 
-Product Management backend REST APIs, payload validation, unique SKU collision handling (409 Conflict), low-stock filtering (`currentStock <= minimumStock`), direct stock edit immunity, role-based authorization (`ADMIN` & `WAREHOUSE` full CRUD, `SALES` & `ACCOUNTS` read-only), React Product List & Detail pages with low-stock badges, and Postman test collection are fully implemented and verified.
+Inventory REST APIs, payload validation, Prisma interactive transactions (`prisma.$transaction`), negative stock prevention (`409 Conflict`), historical audit log immutability (no `PUT`/`DELETE`), JWT `createdById` attribution, role-based authorization (`ADMIN` & `WAREHOUSE` full access; `SALES` & `ACCOUNTS` read-only), React Inventory audit log page & movement modal, and Postman collection are fully implemented and verified.
 
 ---
 
@@ -47,6 +47,11 @@ Product Management backend REST APIs, payload validation, unique SKU collision h
 - **Features:** Catalog SKU management, unique SKU collision prevention (`409 Conflict`), category & warehouse bin location filters, low-stock filter alerts (`currentStock <= minimumStock`), stock update immunity (insulates stock from arbitrary metadata edits).
 - **RBAC:** `ADMIN` & `WAREHOUSE` (Full CRUD), `SALES` & `ACCOUNTS` (Read-only).
 
+### 3. Inventory & Stock Movements Module (Phase 6)
+- **APIs:** `POST /api/v1/inventory/movements`, `GET /api/v1/inventory/movements`, `GET /api/v1/inventory/movements/:id`
+- **Features:** Transactional Stock IN (+) and Stock OUT (-) logged within Prisma interactive transactions (`prisma.$transaction`), negative stock rejection (`409 Conflict`), immutable audit history (no `PUT`/`DELETE`), product & date range filtering, authenticated JWT `createdById` attribution.
+- **RBAC:** `ADMIN` & `WAREHOUSE` (Create & View), `SALES` & `ACCOUNTS` (Audit Log Read-Only).
+
 ---
 
 ## Development Demo Accounts
@@ -55,9 +60,9 @@ The database seed script generates 4 pre-configured role test accounts with hash
 
 | Role | Demo Email | Development Password | Allowed Scope |
 | :--- | :--- | :--- | :--- |
-| **`ADMIN`** | `admin@erp.local` | `AdminPass123!` | Full System Access |
-| **`SALES`** | `sales@erp.local` | `SalesPass123!` | Customer CRM, Products View, Challans (Draft & Confirm) |
-| **`WAREHOUSE`** | `warehouse@erp.local` | `WarehousePass123!` | Product Catalog (CRUD), Stock Movements, View Confirmed Challans |
+| **`ADMIN`** | `admin@erp.local` | `AdminPass123!` | Full System Access Across All Modules |
+| **`SALES`** | `sales@erp.local` | `SalesPass123!` | Customer CRM, Products View, Audit Trail View |
+| **`WAREHOUSE`** | `warehouse@erp.local` | `WarehousePass123!` | Product Catalog (CRUD), Stock Movements (IN/OUT) |
 | **`ACCOUNTS`** | `accounts@erp.local` | `AccountsPass123!` | Read-Only Audit across All Modules |
 
 ---
