@@ -5,7 +5,8 @@ import {
   getChallansService,
   getChallanByIdService,
   updateChallanService,
-  cancelChallanService
+  cancelChallanService,
+  confirmChallanService
 } from '../services/challanService';
 
 /**
@@ -220,3 +221,66 @@ export const cancelChallan = async (req: Request, res: Response): Promise<void> 
     });
   }
 };
+
+/**
+ * Controller: Confirm a DRAFT Sales Challan (DRAFT -> CONFIRMED)
+ * Transactionally deducts stock and logs OUT StockMovements.
+ * PUT /api/v1/challans/:id/confirm (and /api/challans/:id/confirm)
+ */
+export const confirmChallan = async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+
+  if (!req.user) {
+    res.status(401).json({
+      success: false,
+      message: 'Authentication required.'
+    });
+    return;
+  }
+
+  try {
+    const result = await confirmChallanService(id, req.user.id);
+
+    if (!result.success) {
+      if (result.isStatusConflict || result.isInsufficientStock) {
+        res.status(409).json({
+          success: false,
+          message: result.message || 'Confirmation conflict.',
+          data: result.stockErrorData || undefined
+        });
+        return;
+      }
+
+      if (result.isNotFound || result.isProductNotFound) {
+        res.status(404).json({
+          success: false,
+          message: result.message || 'Challan or product not found.'
+        });
+        return;
+      }
+
+      res.status(400).json({
+        success: false,
+        message: result.message || 'Failed to confirm challan.'
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Challan confirmed successfully',
+      data: {
+        challanNumber: result.data?.challanNumber,
+        status: result.data?.status,
+        totalQuantity: result.data?.totalQuantity
+      }
+    });
+  } catch (error) {
+    console.error('Confirm Challan Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'An unexpected server error occurred while confirming the challan.'
+    });
+  }
+};
+

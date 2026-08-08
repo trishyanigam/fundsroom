@@ -5,7 +5,8 @@ import {
   getChallans,
   getChallanById,
   updateChallan,
-  cancelChallan
+  cancelChallan,
+  confirmChallan
 } from '../controllers/challanController';
 import { authenticateToken } from '../middleware/authMiddleware';
 import { authorizeRoles } from '../middleware/roleMiddleware';
@@ -19,9 +20,10 @@ router.use(authenticateToken);
 router.get('/', authorizeRoles(Role.ADMIN, Role.SALES, Role.WAREHOUSE, Role.ACCOUNTS), getChallans);
 router.get('/:id', authorizeRoles(Role.ADMIN, Role.SALES, Role.WAREHOUSE, Role.ACCOUNTS), getChallanById);
 
-// Create, Edit Draft, & Cancel Draft Endpoints (ADMIN and SALES allowed; WAREHOUSE & ACCOUNTS return 403 Forbidden)
+// Create, Edit Draft, Cancel Draft, & Confirm Challan Endpoints (ADMIN and SALES allowed; WAREHOUSE & ACCOUNTS return 403 Forbidden)
 router.post('/', authorizeRoles(Role.ADMIN, Role.SALES), createChallan);
 router.put('/:id', authorizeRoles(Role.ADMIN, Role.SALES), updateChallan);
 router.put('/:id/cancel', authorizeRoles(Role.ADMIN, Role.SALES), cancelChallan);
+router.put('/:id/confirm', authorizeRoles(Role.ADMIN, Role.SALES), confirmChallan);
 
 export default router;

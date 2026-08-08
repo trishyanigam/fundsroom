@@ -18,7 +18,6 @@ This document defines the RESTful API endpoints, HTTP request/response payloads,
 - `POST /api/v1/auth/register` — Registers new user account.
 - `POST /api/v1/auth/login` — User login & JWT generation.
 - `GET /api/v1/auth/me` — Get current user profile.
-- `GET /api/v1/auth/test/admin`, `/sales`, `/warehouse`, `/accounts` — RBAC test routes.
 
 ---
 
@@ -48,48 +47,11 @@ This document defines the RESTful API endpoints, HTTP request/response payloads,
 
 ---
 
-## 6. Sales Challan Endpoints (Phase 7 - Implemented ✅)
+## 6. Sales Challan Endpoints (Phase 7 & 8 - Implemented ✅)
 
-### 6.1 Create Draft Sales Challan
-- **Endpoint:** `POST /api/v1/challans` (and `/api/challans`)
-- **Access:** `ADMIN`, `SALES` (`WAREHOUSE` & `ACCOUNTS` return `403 Forbidden`)
-- **Auto-Generated Challan Number:** Formatted as `CH-YYYY-XXXXXX` (e.g. `CH-2026-000001`).
-- **Product Snapshot Preservation:** Reads and stores current `productName`, `sku`, and `unitPrice` into `ChallanItem`.
-- **Zero Stock Mutation Guarantee:** Draft creation does NOT alter `Product.currentStock` or create `StockMovement` logs.
-- **Request Body:**
-  ```json
-  {
-    "customerId": "cust_101",
-    "items": [
-      { "productId": "prod_101", "quantity": 2 },
-      { "productId": "prod_102", "quantity": 5 }
-    ],
-    "status": "DRAFT"
-  }
-  ```
-- **Success Response (`201 Created`):** Returns created draft challan record.
-
-### 6.2 Get Sales Challans List
-- **Endpoint:** `GET /api/v1/challans` (and `/api/challans`)
-- **Access:** Authenticated (`ADMIN`, `SALES`, `WAREHOUSE`, `ACCOUNTS` allowed)
-- **Query Params:** `page`, `limit`, `search` (challanNumber or customerName), `status` (`DRAFT`, `CONFIRMED`, `CANCELLED`), `customerId`.
-
-### 6.3 Get Sales Challan Detail
-- **Endpoint:** `GET /api/v1/challans/:id` (and `/api/challans/:id`)
-- **Access:** Authenticated (`ADMIN`, `SALES`, `WAREHOUSE`, `ACCOUNTS` allowed)
-
-### 6.4 Update Draft Sales Challan
-- **Endpoint:** `PUT /api/v1/challans/:id` (and `/api/challans/:id`)
-- **Access:** `ADMIN`, `SALES`
-- **Restriction:** Edits permitted on `DRAFT` status only. Attempting to edit `CONFIRMED` or `CANCELLED` challans returns `409 Conflict`. Zero stock mutation.
-
-### 6.5 Cancel Draft Sales Challan
-- **Endpoint:** `PUT /api/v1/challans/:id/cancel` (and `/api/challans/:id/cancel`)
-- **Access:** `ADMIN`, `SALES`
-- **Behavior:** Transitions status from `DRAFT` to `CANCELLED`. Zero stock mutation.
-
----
-
-## 7. Sales Challan Confirmation Endpoints (Phase 8 - Planned)
-
-- `POST /api/v1/challans/:id/confirm` — Confirmation, stock deduction, and automatic OUT movement generation.
+- `POST /api/v1/challans` — Create draft challan (Auto-generated `CH-YYYY-XXXXXX`, product snapshots).
+- `GET /api/v1/challans` — List/search/filter sales challans (`page`, `limit`, `search`, `status`, `customerId`).
+- `GET /api/v1/challans/:id` — Get sales challan details with historical snapshots.
+- `PUT /api/v1/challans/:id` — Update draft challan items.
+- `PUT /api/v1/challans/:id/cancel` — Cancel draft challan (`DRAFT` -> `CANCELLED`).
+- `PUT /api/v1/challans/:id/confirm` — **Confirm Sales Challan (`DRAFT` -> `CONFIRMED`)**. Transactionally verifies stock for all items, deducts `Product.currentStock`, creates `OUT` `StockMovement` logs (`reason: "Sales Challan CH-YYYY-XXXXXX"`), and updates status. Rolls back cleanly if ANY item has insufficient stock (`409 Conflict`).

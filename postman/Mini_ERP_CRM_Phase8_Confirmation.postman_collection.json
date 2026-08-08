@@ -1,0 +1,117 @@
+{
+  "info": {
+    "_postman_id": "e8d25f37-4567-8901-b2cd-ef0123456789",
+    "name": "Mini ERP + CRM - Phase 8 Challan Confirmation & Transactional Stock Deduction",
+    "description": "Postman Collection for testing Phase 8 Challan Confirmation REST APIs (PUT /api/v1/challans/:id/confirm), multi-item transactional stock deduction, insufficient stock rollback (409 Conflict), double confirmation prevention, and RBAC rules.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Challan Confirmation",
+      "item": [
+        {
+          "name": "Confirm Challan (Admin / Sales)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/challans/:id/confirm",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans", ":id", "confirm"],
+              "variable": [
+                { "key": "id", "value": "REPLACE_WITH_DRAFT_CHALLAN_ID" }
+              ]
+            },
+            "description": "Confirms a DRAFT challan. Deducts Product.currentStock, logs OUT StockMovements, and updates status to CONFIRMED inside a single Prisma transaction."
+          }
+        },
+        {
+          "name": "Confirm Insufficient Stock (Expect 409 Conflict)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/challans/:id/confirm",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans", ":id", "confirm"],
+              "variable": [
+                { "key": "id", "value": "REPLACE_WITH_DRAFT_CHALLAN_ID_INSUFFICIENT" }
+              ]
+            },
+            "description": "Attempts confirmation when an item quantity exceeds current stock. Transaction rolls back cleanly with 409 Conflict response."
+          }
+        },
+        {
+          "name": "Confirm Already Confirmed Challan (Expect 409 Conflict)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/challans/:id/confirm",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans", ":id", "confirm"],
+              "variable": [
+                { "key": "id", "value": "REPLACE_WITH_CONFIRMED_CHALLAN_ID" }
+              ]
+            },
+            "description": "Attempts double confirmation. Returns 409 Conflict with zero double stock deduction."
+          }
+        },
+        {
+          "name": "Confirm Cancelled Challan (Expect 409 Conflict)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/challans/:id/confirm",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans", ":id", "confirm"],
+              "variable": [
+                { "key": "id", "value": "REPLACE_WITH_CANCELLED_CHALLAN_ID" }
+              ]
+            },
+            "description": "Attempts to confirm a cancelled challan. Returns 409 Conflict."
+          }
+        },
+        {
+          "name": "Unauthorized Role Confirmation Attempt (Warehouse - Expect 403 Forbidden)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{warehouseToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/challans/:id/confirm",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans", ":id", "confirm"],
+              "variable": [
+                { "key": "id", "value": "REPLACE_WITH_DRAFT_CHALLAN_ID" }
+              ]
+            },
+            "description": "Warehouse role attempt to confirm sales challan. Returns 403 Forbidden."
+          }
+        }
+      ]
+    }
+  ]
+}

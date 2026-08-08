@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Challan, getChallanByIdApi, cancelChallanApi } from '../services/challanService';
+import { Challan, getChallanByIdApi, cancelChallanApi, confirmChallanApi } from '../services/challanService';
 
 interface ChallanDetailPageProps {
   challanId: string;
@@ -17,14 +17,19 @@ export const ChallanDetailPage: React.FC<ChallanDetailPageProps> = ({
   const [challan, setChallan] = useState<Challan | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
-  const [isCancelling, setIsCancelling] = useState<boolean>(false);
+  const [stockAlertError, setStockAlertError] = useState<any | null>(null);
 
-  const canEditOrCancel = (userRole === 'ADMIN' || userRole === 'SALES') && challan?.status === 'DRAFT';
+  const [isConfirming, setIsConfirming] = useState<boolean>(false);
+  const [isCancelling, setIsCancelling] = useState<boolean>(false);
+  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
+
+  const canConfirmOrEdit = (userRole === 'ADMIN' || userRole === 'SALES') && challan?.status === 'DRAFT';
 
   const fetchChallanDetails = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
+      setStockAlertError(null);
       const response = await getChallanByIdApi(challanId);
       if (response.success) {
         setChallan(response.data);
@@ -42,6 +47,27 @@ export const ChallanDetailPage: React.FC<ChallanDetailPageProps> = ({
     fetchChallanDetails();
   }, [fetchChallanDetails]);
 
+  const handleConfirmChallan = async () => {
+    try {
+      setIsConfirming(true);
+      setStockAlertError(null);
+      setError('');
+      await confirmChallanApi(challanId);
+      setIsConfirming(false);
+      setShowConfirmModal(false);
+      fetchChallanDetails();
+    } catch (err: any) {
+      setIsConfirming(false);
+      setShowConfirmModal(false);
+      const resData = err.response?.data;
+      if (resData?.data) {
+        setStockAlertError(resData.data);
+      }
+      const msg = resData?.message || 'Failed to confirm sales challan.';
+      setError(msg);
+    }
+  };
+
   const handleCancelChallan = async () => {
     if (!window.confirm('Are you sure you want to cancel this draft sales challan?')) return;
     try {
@@ -52,7 +78,7 @@ export const ChallanDetailPage: React.FC<ChallanDetailPageProps> = ({
     } catch (err: any) {
       setIsCancelling(false);
       const msg = err.response?.data?.message || 'Failed to cancel draft challan.';
-      alert(msg);
+      setError(msg);
     }
   };
 
@@ -78,7 +104,7 @@ export const ChallanDetailPage: React.FC<ChallanDetailPageProps> = ({
     );
   }
 
-  if (error || !challan) {
+  if (!challan) {
     return (
       <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm text-center max-w-lg mx-auto my-8">
         <p className="text-rose-600 font-semibold mb-2">{error || 'Challan not found.'}</p>
@@ -99,7 +125,7 @@ export const ChallanDetailPage: React.FC<ChallanDetailPageProps> = ({
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
-      {/* Header */}
+      {/* Top Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center space-x-3">
           <button
@@ -119,28 +145,54 @@ export const ChallanDetailPage: React.FC<ChallanDetailPageProps> = ({
           </div>
         </div>
 
-        {canEditOrCancel && (
+        {canConfirmOrEdit && (
           <div className="flex items-center space-x-3">
+            <button
+              onClick={() => setShowConfirmModal(true)}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-lg shadow-sm transition-all flex items-center space-x-1"
+            >
+              <span>✅ Confirm & Deduct Stock</span>
+            </button>
             {onEditDraft && (
               <button
                 onClick={() => onEditDraft(challan)}
                 className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm rounded-lg shadow-sm transition-all"
               >
-                Edit Draft Items
+                Edit Draft
               </button>
             )}
             <button
               onClick={handleCancelChallan}
               disabled={isCancelling}
-              className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-sm rounded-lg border border-rose-200 transition-all disabled:opacity-50"
+              className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-sm rounded-lg border border-rose-200 transition-all disabled:opacity-50"
             >
-              {isCancelling ? 'Cancelling...' : 'Cancel Challan'}
+              {isCancelling ? 'Cancelling...' : 'Cancel'}
             </button>
           </div>
         )}
       </div>
 
-      {/* Customer & Overview Cards */}
+      {/* Error Alert */}
+      {error && (
+        <div className="bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-xl text-sm space-y-2">
+          <div className="font-bold flex items-center space-x-2">
+            <span>⚠️ Confirmation Failed:</span>
+            <span>{error}</span>
+          </div>
+          {stockAlertError && (
+            <div className="bg-white p-3 rounded-lg border border-rose-200 text-xs font-mono text-slate-800 space-y-1">
+              <div>Product: <strong>{stockAlertError.productName}</strong></div>
+              <div>Available Inventory Stock: <strong className="text-rose-600">{stockAlertError.availableStock} units</strong></div>
+              <div>Requested in Challan: <strong className="text-slate-900">{stockAlertError.requestedQuantity} units</strong></div>
+              <p className="text-[11px] text-slate-500 font-sans mt-1">
+                Zero stock changes occurred. Please add stock via Phase 6 Inventory module or edit draft line quantities.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Customer & Summary Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-3">
           <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400">Customer Details</h2>
@@ -164,15 +216,21 @@ export const ChallanDetailPage: React.FC<ChallanDetailPageProps> = ({
                 <span className="text-xl font-bold text-slate-900 font-mono">{challan.totalQuantity} units</span>
               </div>
               <div>
-                <label className="text-[11px] text-slate-400 font-medium block uppercase">Estimated Valuation</label>
+                <label className="text-[11px] text-slate-400 font-medium block uppercase">Valuation</label>
                 <span className="text-xl font-bold text-slate-900 font-mono">
                   ₹{grandTotalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </span>
               </div>
               <div>
-                <label className="text-[11px] text-slate-400 font-medium block uppercase">Stock Impact</label>
-                <span className="text-xs font-bold text-slate-500 block mt-1">
-                  {challan.status === 'DRAFT' ? '🔒 Zero Mutation (Phase 7 Draft)' : challan.status}
+                <label className="text-[11px] text-slate-400 font-medium block uppercase">Stock Status</label>
+                <span className="text-xs font-bold block mt-1">
+                  {challan.status === 'CONFIRMED' ? (
+                    <span className="text-emerald-700">Deducted from Inventory</span>
+                  ) : challan.status === 'DRAFT' ? (
+                    <span className="text-amber-700">Pending Confirmation</span>
+                  ) : (
+                    <span className="text-slate-500">Cancelled (No Deduction)</span>
+                  )}
                 </span>
               </div>
             </div>
@@ -180,19 +238,19 @@ export const ChallanDetailPage: React.FC<ChallanDetailPageProps> = ({
 
           {challan.status === 'DRAFT' && (
             <div className="bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-lg text-xs mt-4">
-              💡 <strong>Phase 7 Note:</strong> This challan is in <strong>DRAFT</strong> status. Products and stock quantities have been validated and snapshotted, but inventory has not been deducted yet. Confirmation will be completed in Phase 8.
+              💡 <strong>Ready for Confirmation:</strong> Click <strong>Confirm & Deduct Stock</strong> to atomically deduct product stock and generate OUT stock movement audit records.
             </div>
           )}
         </div>
       </div>
 
-      {/* Historical Items Snapshot Table */}
+      {/* Line Items Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden space-y-0">
         <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
             Historical Line Item Snapshots ({challan.items.length})
           </h3>
-          <span className="text-[11px] text-slate-500">Prices frozen as of creation timestamp</span>
+          <span className="text-[11px] text-slate-500">Prices frozen at voucher generation timestamp</span>
         </div>
 
         <div className="overflow-x-auto">
@@ -217,7 +275,7 @@ export const ChallanDetailPage: React.FC<ChallanDetailPageProps> = ({
                     <td className="px-6 py-4 font-mono">
                       ₹{price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </td>
-                    <td className="px-6 py-4 font-mono font-bold">{item.quantity}</td>
+                    <td className="px-6 py-4 font-mono font-bold">{item.quantity} units</td>
                     <td className="px-6 py-4 text-right font-mono font-bold text-slate-900">
                       ₹{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </td>
@@ -239,6 +297,41 @@ export const ChallanDetailPage: React.FC<ChallanDetailPageProps> = ({
           </table>
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden p-6 space-y-4">
+            <h3 className="text-lg font-bold text-slate-900">Confirm Sales Challan & Deduct Stock</h3>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              Are you sure you want to confirm sales challan <strong className="font-mono">{challan.challanNumber}</strong>?
+            </p>
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-lg text-xs space-y-1">
+              <div>• Stock will be automatically deducted for all line items.</div>
+              <div>• OUT stock movement audit logs will be logged under your user account.</div>
+              <div>• Status will become permanent CONFIRMED.</div>
+            </div>
+
+            <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-200">
+              <button
+                type="button"
+                onClick={() => setShowConfirmModal(false)}
+                className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isConfirming}
+                onClick={handleConfirmChallan}
+                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-lg shadow-sm transition-all disabled:opacity-50"
+              >
+                {isConfirming ? 'Processing Transaction...' : 'Yes, Confirm & Deduct'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

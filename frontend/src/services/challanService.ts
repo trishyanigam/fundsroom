@@ -123,3 +123,12 @@ export const cancelChallanApi = async (id: string): Promise<ChallanSingleRespons
   const response = await apiClient.put<ChallanSingleResponse>(`/challans/${id}/cancel`);
   return response.data;
 };
+
+/**
+ * API Service: Confirm a DRAFT Sales Challan (DRAFT -> CONFIRMED) with transactional stock deduction
+ */
+export const confirmChallanApi = async (id: string): Promise<ChallanSingleResponse> => {
+  const response = await apiClient.put<ChallanSingleResponse>(`/challans/${id}/confirm`);
+  return response.data;
+};
+

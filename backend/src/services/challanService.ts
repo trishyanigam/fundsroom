@@ -401,3 +401,141 @@ export const cancelChallanService = async (id: string): Promise<ChallanOperation
     data: cancelledChallan
   };
 };
+
+export interface ConfirmationInsufficientStockData {
+  productId: string;
+  productName: string;
+  availableStock: number;
+  requestedQuantity: number;
+}
+
+export interface ConfirmChallanResult extends ChallanOperationResult {
+  isInsufficientStock?: boolean;
+  stockErrorData?: ConfirmationInsufficientStockData;
+}
+
+/**
+ * Confirms a DRAFT Sales Challan inside an interactive Prisma Transaction:
+ * 1. Verifies DRAFT status.
+ * 2. Checks current stock for ALL line items.
+ * 3. Rollbacks cleanly if ANY product has insufficient stock.
+ * 4. Deducts Product.currentStock, creates OUT StockMovement records, and marks status CONFIRMED.
+ */
+export const confirmChallanService = async (
+  id: string,
+  userId: string
+): Promise<ConfirmChallanResult> => {
+  return await prisma.$transaction(async (tx) => {
+    // 1. Load Challan with line items
+    const challan = await tx.challan.findUnique({
+      where: { id },
+      include: { items: true }
+    });
+
+    if (!challan) {
+      return { success: false, isNotFound: true, message: 'Challan not found.' };
+    }
+
+    // 2. Validate Status
+    if (challan.status === ChallanStatus.CONFIRMED) {
+      return {
+        success: false,
+        isStatusConflict: true,
+        message: 'Challan is already confirmed'
+      };
+    }
+
+    if (challan.status === ChallanStatus.CANCELLED) {
+      return {
+        success: false,
+        isStatusConflict: true,
+        message: 'Cancelled challan cannot be confirmed'
+      };
+    }
+
+    if (challan.status !== ChallanStatus.DRAFT) {
+      return {
+        success: false,
+        isStatusConflict: true,
+        message: `Challan in status ${challan.status} cannot be confirmed.`
+      };
+    }
+
+    // 3. Pre-check stock for EVERY line item before modifying anything
+    for (const item of challan.items) {
+      const product = await tx.product.findUnique({
+        where: { id: item.productId }
+      });
+
+      if (!product) {
+        return {
+          success: false,
+          isProductNotFound: true,
+          message: `Product '${item.productName}' no longer exists in catalog.`
+        };
+      }
+
+      if (product.currentStock < item.quantity) {
+        // ROLLBACK TRANSACTION IMMEDIATELY
+        return {
+          success: false,
+          isInsufficientStock: true,
+          message: `Insufficient stock for product ${product.name}`,
+          stockErrorData: {
+            productId: product.id,
+            productName: product.name,
+            availableStock: product.currentStock,
+            requestedQuantity: item.quantity
+          }
+        };
+      }
+    }
+
+    // 4. All products have sufficient stock -> Deduct stock and log OUT movements
+    for (const item of challan.items) {
+      const updateResult = await tx.product.updateMany({
+        where: {
+          id: item.productId,
+          currentStock: { gte: item.quantity }
+        },
+        data: {
+          currentStock: { decrement: item.quantity }
+        }
+      });
+
+      if (updateResult.count === 0) {
+        throw new Error(`Concurrency stock conflict on product ID '${item.productId}'. Stock was modified right before confirmation.`);
+      }
+
+      // Create OUT StockMovement
+      await tx.stockMovement.create({
+        data: {
+          productId: item.productId,
+          quantity: item.quantity,
+          movementType: 'OUT',
+          reason: `Sales Challan ${challan.challanNumber}`,
+          createdById: userId
+        }
+      });
+    }
+
+    // 5. Update Challan status to CONFIRMED
+    const confirmedChallan = await tx.challan.update({
+      where: { id },
+      data: { status: ChallanStatus.CONFIRMED },
+      include: {
+        customer: true,
+        items: true,
+        createdBy: {
+          select: { id: true, name: true, email: true, role: true }
+        }
+      }
+    });
+
+    return {
+      success: true,
+      data: confirmedChallan
+    };
+  });
+};
+

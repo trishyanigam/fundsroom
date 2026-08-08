@@ -24,13 +24,13 @@ The application uses a decoupled, full-stack architecture comprising a Node.js/E
 ### 2.4 Inventory & Stock Movements Pipeline (`POST /api/v1/inventory/movements`)
 `Inventory UI -> Axios -> Inventory API -> Auth/RBAC -> Controller -> Service -> Prisma Transaction -> PostgreSQL`
 
-### 2.5 Sales Challan Pipeline (`POST /api/v1/challans`)
+### 2.5 Sales Challan Confirmation Pipeline (`PUT /api/v1/challans/:id/confirm`)
 
 ```
-Challan UI (`ChallanFormPage.tsx`)
+Challan Detail UI (`ChallanDetailPage.tsx`) ──► User Confirms Modal
    │
    ▼ (HTTP Header: Authorization Bearer JWT)
-Challan REST API (`POST /api/v1/challans`)
+Confirmation REST API (`PUT /api/v1/challans/:id/confirm`)
    │
    ▼
 Auth Middleware (`authenticateToken`) ── Invalid JWT ──► Return HTTP 401 Unauthorized
@@ -42,29 +42,23 @@ RBAC Middleware (`authorizeRoles("ADMIN", "SALES")`) ── Unauthorized Role �
 Challan Controller (`challanController.ts`)
    │
    ▼
-Challan Validator (`challanValidator.ts`) ── Direct CONFIRMED Attempt or Invalid Payload ──► Return HTTP 400 Bad Request
-   │
-   ▼
-Challan Service (`challanService.ts`)
+Challan Service (`confirmChallanService`)
    │
    ▼
 Prisma Interactive Transaction (`prisma.$transaction`)
-   ├── 1. Verify Customer & Product existence
-   ├── 2. Capture Product Snapshot (`productName`, `sku`, `unitPrice`)
-   ├── 3. Auto-Generate Unique Challan Number (`CH-YYYY-XXXXXX`)
-   ├── 4. Server-Side Summation of `totalQuantity`
-   └── 5. Create Challan (status = DRAFT) & ChallanItem records
+   ├── 1. Check Challan status == DRAFT (Return 409 Conflict if CONFIRMED or CANCELLED)
+   ├── 2. Pre-Check stock for ALL items (If ANY item stock < qty -> ABORT & ROLLBACK -> 409 Conflict)
+   ├── 3. Decrement Product.currentStock for all items (Row-level conditional update)
+   ├── 4. Create OUT StockMovement audit records (createdById = req.user.id)
+   └── 5. Update Challan.status = CONFIRMED
    │
-   ▼ (ZERO STOCK MUTATION: Product.currentStock remains 100% untouched)
-PostgreSQL Database
+   ▼
+PostgreSQL Database (Committed Atomically)
 ```
 
 ---
 
-## 3. Backend Layered Architecture
+## 3. Concurrency & Locking Strategy
 
-1. **Routes (`/src/routes`)**: Maps URI paths (`/api/v1/challans`) and attaches `authenticateToken` / `authorizeRoles` middlewares.
-2. **Middleware (`/src/middleware`)**: `authMiddleware.ts` (JWT token verify) and `roleMiddleware.ts` (RBAC rules).
-3. **Controllers (`/src/controllers`)**: HTTP status codes (`200`, `201`, `400`, `401`, `403`, `404`, `409`, `500`).
-4. **Services (`/src/services`)**: Business logic, product snapshot capture, challan number generation, and Prisma transactions.
-5. **Data Layer (`/src/db` / Prisma)**: Type-safe database persistence.
+- **Interactive Transaction Isolation**: Confirmation operations execute inside `prisma.$transaction(async (tx) => { ... })`.
+- **Atomic Conditional Updates**: Stock decrement operations use `updateMany` with condition `currentStock: { gte: item.quantity }`. If `updateMany.count === 0` (indicating stock was modified concurrently by another thread), the transaction throws an error and rolls back cleanly.
