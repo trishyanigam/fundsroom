@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes';
 import customerRoutes from './routes/customerRoutes';
+import productRoutes from './routes/productRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -32,6 +33,10 @@ app.use('/api/auth', authRoutes);
 // Customer CRM Routes
 app.use('/api/v1/customers', customerRoutes);
 app.use('/api/customers', customerRoutes);
+
+// Product Management Routes
+app.use('/api/v1/products', productRoutes);
+app.use('/api/products', productRoutes);
 
 // 404 Unmatched Route Handler
 app.use((_req: Request, res: Response) => {
@@ -63,6 +68,7 @@ if (process.env.NODE_ENV !== 'test') {
     console.log(`🏥 Health Check available at http://localhost:${PORT}/api/health`);
     console.log(`🔐 Auth Endpoints mounted at http://localhost:${PORT}/api/v1/auth`);
     console.log(`👥 Customer CRM Endpoints mounted at http://localhost:${PORT}/api/v1/customers`);
+    console.log(`📦 Product Catalog Endpoints mounted at http://localhost:${PORT}/api/v1/products`);
   });
 }
 

@@ -10,15 +10,6 @@ This document defines the RESTful API endpoints, HTTP request/response payloads,
 - **Content-Type:** `application/json`
 - **Authentication Header:** `Authorization: Bearer <JWT_TOKEN>`
 - **Pagination Format:** Standard `page` (default: 1) and `limit` (default: 10, max: 100) query parameters.
-- **Success Response Structure:**
-  ```json
-  {
-    "success": true,
-    "message": "Operation description",
-    "data": { ... },
-    "pagination": { "page": 1, "limit": 10, "total": 25, "totalPages": 3 }
-  }
-  ```
 
 ---
 
@@ -33,76 +24,74 @@ This document defines the RESTful API endpoints, HTTP request/response payloads,
 
 ## 3. Customer CRM Endpoints (Phase 4 - Implemented ✅)
 
-### 3.1 List / Search / Filter Customers
-- **Endpoint:** `GET /api/v1/customers` (and `/api/customers`)
-- **Access:** Authenticated (`ADMIN`, `SALES`, `ACCOUNTS` allowed; `WAREHOUSE` forbidden)
+- `POST /api/v1/customers` — Create customer record.
+- `GET /api/v1/customers` — List/search/filter customers (`page`, `limit`, `search`, `status`, `customerType`).
+- `GET /api/v1/customers/:id` — Get customer profile by ID.
+- `PUT /api/v1/customers/:id` — Update customer profile and follow-up notes.
+
+---
+
+## 4. Product Catalog Endpoints (Phase 5 - Implemented ✅)
+
+### 4.1 List / Search / Filter Products
+- **Endpoint:** `GET /api/v1/products` (and `/api/products`)
+- **Access:** Authenticated (`ADMIN`, `WAREHOUSE`, `SALES`, `ACCOUNTS` allowed)
 - **Query Params:**
   - `page` (default: 1)
   - `limit` (default: 10, max: 100)
-  - `search` (searches `customerName`, `businessName`, `mobile`, `email`)
-  - `status` (`LEAD`, `ACTIVE`, `INACTIVE`)
-  - `customerType` (`RETAIL`, `WHOLESALE`, `DISTRIBUTOR`)
+  - `search` (searches `name`, `sku`, `category`)
+  - `category` (exact string match)
+  - `warehouseLocation` (exact location match)
+  - `lowStock` (`true` returns products where `currentStock <= minimumStock`)
 - **Success Response (`200 OK`):**
   ```json
   {
     "success": true,
     "data": [
       {
-        "id": "cust_102",
-        "customerName": "Rahul Sharma",
-        "mobile": "9876543210",
-        "email": "rahul@example.com",
-        "businessName": "Sharma Traders",
-        "gstNumber": "27AAACA12341ZV",
-        "customerType": "WHOLESALE",
-        "address": "Delhi",
-        "status": "ACTIVE",
-        "followUpDate": "2026-08-15T00:00:00.000Z",
-        "notes": "Interested in bulk order"
+        "id": "prod_101",
+        "name": "Laptop Stand Ergonomic",
+        "sku": "LAP-STAND-001",
+        "category": "Electronics",
+        "unitPrice": 1850.00,
+        "currentStock": 25,
+        "minimumStock": 5,
+        "warehouseLocation": "Delhi Main Warehouse - Shelf B1"
       }
     ],
     "pagination": { "page": 1, "limit": 10, "total": 1, "totalPages": 1 }
   }
   ```
 
-### 3.2 Get Customer Detail
-- **Endpoint:** `GET /api/v1/customers/:id` (and `/api/customers/:id`)
-- **Access:** Authenticated (`ADMIN`, `SALES`, `ACCOUNTS` allowed; `WAREHOUSE` forbidden)
-- **Success Response (`200 OK`):** Returns single customer object.
-- **Failure Response (`404 Not Found`):** `{ "success": false, "error": { "code": "NOT_FOUND", "message": "Customer not found." } }`
+### 4.2 Get Product Detail
+- **Endpoint:** `GET /api/v1/products/:id` (and `/api/products/:id`)
+- **Access:** Authenticated (`ADMIN`, `WAREHOUSE`, `SALES`, `ACCOUNTS` allowed)
+- **Success Response (`200 OK`):** Returns single product object.
+- **Failure Response (`404 Not Found`):** `{ "success": false, "message": "Product not found" }`
 
-### 3.3 Create Customer
-- **Endpoint:** `POST /api/v1/customers` (and `/api/customers`)
-- **Access:** `ADMIN`, `SALES` (`ACCOUNTS` & `WAREHOUSE` return `403 Forbidden`)
+### 4.3 Create Product
+- **Endpoint:** `POST /api/v1/products` (and `/api/products`)
+- **Access:** `ADMIN`, `WAREHOUSE` (`SALES` & `ACCOUNTS` return `403 Forbidden`)
 - **Request Body:**
   ```json
   {
-    "customerName": "Rahul Sharma",
-    "mobile": "9876543210",
-    "email": "rahul@example.com",
-    "businessName": "Sharma Traders",
-    "gstNumber": "GST123456",
-    "customerType": "WHOLESALE",
-    "address": "Delhi",
-    "status": "ACTIVE",
-    "followUpDate": "2026-08-15",
-    "notes": "Interested in bulk order"
+    "name": "Laptop Stand Ergonomic",
+    "sku": "LAP-STAND-001",
+    "category": "Electronics",
+    "unitPrice": 1850.00,
+    "currentStock": 25,
+    "minimumStock": 5,
+    "warehouseLocation": "Delhi Main Warehouse - Shelf B1"
   }
   ```
-- **Success Response (`201 Created`):** Returns created customer record.
+- **Success Response (`201 Created`):** Returns created product record.
+- **Duplicate SKU Collision (`409 Conflict`):** `{ "success": false, "message": "Product SKU already exists" }`
 
-### 3.4 Edit Customer (Includes Notes & Follow-up Date)
-- **Endpoint:** `PUT /api/v1/customers/:id` (and `/api/customers/:id`)
-- **Access:** `ADMIN`, `SALES` (`ACCOUNTS` & `WAREHOUSE` return `403 Forbidden`)
-- **Success Response (`200 OK`):** Returns updated customer record.
-
----
-
-## 4. Product Catalog Endpoints (Phase 5 - Planned)
-
-- `GET /api/v1/products`
-- `POST /api/v1/products`
-- `PUT /api/v1/products/:id`
+### 4.4 Update Product Metadata (Excludes Stock Edits)
+- **Endpoint:** `PUT /api/v1/products/:id` (and `/api/products/:id`)
+- **Access:** `ADMIN`, `WAREHOUSE` (`SALES` & `ACCOUNTS` return `403 Forbidden`)
+- **Restriction:** Direct modification of `currentStock` via update endpoint is restricted to preserve inventory integrity. Stock movements are managed via Phase 6 Inventory module.
+- **Success Response (`200 OK`):** Returns updated product record.
 
 ---
 
@@ -118,4 +107,3 @@ This document defines the RESTful API endpoints, HTTP request/response payloads,
 - `GET /api/v1/challans`
 - `POST /api/v1/challans`
 - `POST /api/v1/challans/:id/confirm`
-- `POST /api/v1/challans/:id/cancel`

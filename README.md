@@ -10,9 +10,9 @@ The portal enforces role-based access control (RBAC) across four distinct intern
 
 ## Current Status
 
-**PHASE 4 - Customer CRM Module Complete**
+**PHASE 5 - Product Management Module Complete**
 
-Customer CRM backend REST APIs, payload validation, search/filtering/pagination, role-based authorization (`ADMIN` & `SALES` full CRUD, `ACCOUNTS` read-only, `WAREHOUSE` forbidden), React Customer List & Detail pages, and Postman test collection are fully implemented and verified.
+Product Management backend REST APIs, payload validation, unique SKU collision handling (409 Conflict), low-stock filtering (`currentStock <= minimumStock`), direct stock edit immunity, role-based authorization (`ADMIN` & `WAREHOUSE` full CRUD, `SALES` & `ACCOUNTS` read-only), React Product List & Detail pages with low-stock badges, and Postman test collection are fully implemented and verified.
 
 ---
 
@@ -35,16 +35,17 @@ Customer CRM backend REST APIs, payload validation, search/filtering/pagination,
 
 ---
 
-## Customer CRM Module Features (Phase 4)
+## Implemented Modules
 
-- **Create Customer (`POST /api/v1/customers`):** Register new wholesale buyers, retail clients, or distributors with business info, contact details, optional GST number, address, status, follow-up date, and notes.
-- **Search & Filtering (`GET /api/v1/customers`):** Real-time multi-field search (`customerName`, `businessName`, `mobile`, `email`), status filters (`LEAD`, `ACTIVE`, `INACTIVE`), customer type filters (`RETAIL`, `WHOLESALE`, `DISTRIBUTOR`), and page limit controls.
-- **Customer Details (`GET /api/v1/customers/:id`):** Full profile overview displaying contact info, GST, address, and interaction notes.
-- **Update Customer (`PUT /api/v1/customers/:id`):** Edit profile details, change status, and update follow-up notes & dates.
-- **Role-Based Access Control (RBAC):**
-  - **`ADMIN` & `SALES`**: Full access to Create, Read, Update, Search, and Edit notes.
-  - **`ACCOUNTS`**: Read-only access to view and search customer profiles (Mutating endpoints return `403 Forbidden`).
-  - **`WAREHOUSE`**: Customer module navigation and APIs are completely restricted (`403 Forbidden`).
+### 1. Customer CRM Module (Phase 4)
+- **APIs:** `POST /api/v1/customers`, `GET /api/v1/customers`, `GET /api/v1/customers/:id`, `PUT /api/v1/customers/:id`
+- **Features:** Customer registration, multi-field search (`customerName`, `businessName`, `mobile`, `email`), status filters (`LEAD`, `ACTIVE`, `INACTIVE`), customer type filters (`RETAIL`, `WHOLESALE`, `DISTRIBUTOR`), follow-up dates & notes timeline.
+- **RBAC:** `ADMIN` & `SALES` (Full CRUD), `ACCOUNTS` (Read-only), `WAREHOUSE` (Restricted `403`).
+
+### 2. Product Management Module (Phase 5)
+- **APIs:** `POST /api/v1/products`, `GET /api/v1/products`, `GET /api/v1/products/:id`, `PUT /api/v1/products/:id`
+- **Features:** Catalog SKU management, unique SKU collision prevention (`409 Conflict`), category & warehouse bin location filters, low-stock filter alerts (`currentStock <= minimumStock`), stock update immunity (insulates stock from arbitrary metadata edits).
+- **RBAC:** `ADMIN` & `WAREHOUSE` (Full CRUD), `SALES` & `ACCOUNTS` (Read-only).
 
 ---
 
@@ -58,57 +59,6 @@ The database seed script generates 4 pre-configured role test accounts with hash
 | **`SALES`** | `sales@erp.local` | `SalesPass123!` | Customer CRM, Products View, Challans (Draft & Confirm) |
 | **`WAREHOUSE`** | `warehouse@erp.local` | `WarehousePass123!` | Product Catalog (CRUD), Stock Movements, View Confirmed Challans |
 | **`ACCOUNTS`** | `accounts@erp.local` | `AccountsPass123!` | Read-Only Audit across All Modules |
-
----
-
-## Project Structure
-
-```
-mini-erp-crm/
-│
-├── backend/
-│   ├── prisma/
-│   │   ├── schema.prisma         # PostgreSQL schema (User, Customer, Product, StockMovement, Challan, ChallanItem)
-│   │   └── seed.ts               # Database seed script
-│   ├── src/
-│   │   ├── controllers/
-│   │   │   ├── authController.ts # Auth endpoints
-│   │   │   └── customerController.ts # Customer CRM endpoints
-│   │   ├── middleware/
-│   │   │   ├── authMiddleware.ts # Bearer JWT token verification
-│   │   │   └── roleMiddleware.ts # RBAC authorization
-│   │   ├── routes/
-│   │   │   ├── authRoutes.ts
-│   │   │   └── customerRoutes.ts
-│   │   ├── services/
-│   │   │   ├── authService.ts
-│   │   │   └── customerService.ts # Customer Prisma queries, search & pagination
-│   │   ├── validators/
-│   │   │   ├── authValidator.ts
-│   │   │   └── customerValidator.ts # Customer payload validator
-│   │   └── server.ts             # Express server & endpoint mounting
-│   ├── .env                      # Local environment settings
-│   └── package.json
-│
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   └── CustomerFormModal.tsx # Reusable Add & Edit Customer Modal
-│   │   ├── pages/
-│   │   │   ├── CustomerListPage.tsx  # Customer Directory with Search, Filter & Pagination
-│   │   │   └── CustomerDetailPage.tsx# Customer Detail Profile & Notes View
-│   │   ├── services/
-│   │   │   ├── api.ts            # Axios base client
-│   │   │   └── customerService.ts# Customer API client calls
-│   │   ├── App.tsx               # Main application shell & router
-│   │   └── main.tsx
-│   ├── .env
-│   └── package.json
-│
-├── docs/                     # Design & architecture specifications
-├── postman/                  # Postman collections
-└── README.md
-```
 
 ---
 

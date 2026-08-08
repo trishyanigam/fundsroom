@@ -7,13 +7,13 @@ This document outlines the sequential 15-phase implementation plan for building 
 ## Roadmap Status Summary
 
 ```
-[✅ PHASE 0] ──► [✅ PHASE 1] ──► [✅ PHASE 2] ──► [✅ PHASE 3] ──► [✅ PHASE 4] ──► [⏳ PHASE 5]
- Arch &           Setup &          Database         Auth &           Customer         Product
- Planning         Git Init         + Prisma         RBAC             CRM              Catalog
-                                                                                        │
-[🔒 PHASE 14] ◄─ [🔒 PHASE 13] ◄─ [🔒 PHASE 12] ◄─ [🔒 PHASE 11] ◄─ [🔒 PHASE 10] ◄─ [🔒 PHASE 9]  ◄─ [🔒 PHASE 8] ◄─ [🔒 PHASE 7] ◄─ [🔒 PHASE 6]
- Final Audit      Docs &           Deployment       Testing &        Frontend-        React UI &       Atomic Stock     Sales            Inventory
-                  Submission                        Postman          Backend Int      Dashboard        Confirmation     Challans         Movements
+[✅ PHASE 0] ──► [✅ PHASE 1] ──► [✅ PHASE 2] ──► [✅ PHASE 3] ──► [✅ PHASE 4] ──► [✅ PHASE 5] ──► [⏳ PHASE 6]
+ Arch &           Setup &          Database         Auth &           Customer         Product          Inventory
+ Planning         Git Init         + Prisma         RBAC             CRM              Catalog          Movements
+                                                                                                        │
+[🔒 PHASE 14] ◄─ [🔒 PHASE 13] ◄─ [🔒 PHASE 12] ◄─ [🔒 PHASE 11] ◄─ [🔒 PHASE 10] ◄─ [🔒 PHASE 9]  ◄─ [🔒 PHASE 8] ◄─ [🔒 PHASE 7]
+ Final Audit      Docs &           Deployment       Testing &        Frontend-        React UI &       Atomic Stock     Sales
+                  Submission                        Postman          Backend Int      Dashboard        Confirmation     Challans
 ```
 
 ---
@@ -40,12 +40,13 @@ This document outlines the sequential 15-phase implementation plan for building 
 - **Deliverables:** Implemented Customer REST APIs (`POST /customers`, `GET /customers`, `GET /customers/:id`, `PUT /customers/:id`), payload validation (`customerValidator.ts`), pagination (`page`, `limit`), multi-field search (`customerName`, `businessName`, `mobile`, `email`), filters (`status`, `customerType`), follow-up notes & date timeline, RBAC permissions (`ADMIN` & `SALES` full access, `ACCOUNTS` read-only, `WAREHOUSE` forbidden), React frontend Customer List & Detail pages, and Postman test collection.
 - **Status:** Fully completed & verified.
 
-### PHASE 5: Product Management Module (NEXT ⏳)
-- **Deliverables:** Implement Product REST endpoints (`GET`, `POST`, `PUT`), unique SKU validation, minimum stock alert calculation, and warehouse location management.
-- **Status:** Scheduled next.
+### PHASE 5: Product Management Module (COMPLETED ✅)
+- **Deliverables:** Implemented Product REST APIs (`POST /products`, `GET /products`, `GET /products/:id`, `PUT /products/:id`), unique SKU collision validation (`409 Conflict`), low-stock filter logic (`currentStock <= minimumStock`), direct stock edit immunity rules on update, RBAC permissions (`ADMIN` & `WAREHOUSE` full access; `SALES` & `ACCOUNTS` read-only), React Product List & Detail pages with low-stock warning badges, and Postman collection.
+- **Status:** Fully completed & verified.
 
-### PHASE 6: Inventory & Stock Movement Tracking (LOCKED 🔒)
-- **Deliverables:** Implement manual stock movement endpoint (`POST /inventory/movements`), movement audit log list endpoint (`GET /inventory/movements`), and stock validation rules.
+### PHASE 6: Inventory & Stock Movement Tracking (NEXT ⏳)
+- **Deliverables:** Implement manual stock movement creation endpoint (`POST /inventory/movements`), stock movement audit log list endpoint (`GET /inventory/movements`), stock validation rules, and inventory movement history UI.
+- **Status:** Scheduled next.
 
 ### PHASE 7: Sales Challan Core Management (LOCKED 🔒)
 - **Deliverables:** Implement Challan listing, detail retrieval, and draft challan creation endpoint (`POST /challans`) with historical product snapshot resolution (`productName`, `sku`, `unitPrice`). Verify zero stock mutation on `DRAFT`.
@@ -54,19 +55,19 @@ This document outlines the sequential 15-phase implementation plan for building 
 - **Deliverables:** Implement `POST /challans/:id/confirm` endpoint wrapped in Prisma interactive transaction (`prisma.$transaction`). Verify multi-item atomic stock verification, stock reduction, automated `OUT` stock movement creation, and rollback behavior on insufficient stock.
 
 ### PHASE 9: React Dashboard & UI Components (LOCKED 🔒)
-- **Deliverables:** Initialize Vite React TypeScript project with Tailwind CSS, build layout frames (`AppLayout`, `Sidebar`, `Header`), metrics dashboard cards, and modular UI components (`DataTable`, `Modal`, `Badge`).
+- **Deliverables:** Build layout frames, metrics dashboard cards (low stock alerts, sales volume, top clients), and modular UI components.
 
 ### PHASE 10: Frontend & Backend Integration (LOCKED 🔒)
-- **Deliverables:** Set up Axios API client with bearer token interceptor, integrate `AuthContext`, connect React forms & tables with backend REST APIs across Customer CRM, Product Catalog, Inventory, and Sales Challans.
+- **Deliverables:** Connect all React pages with backend REST APIs across Customer CRM, Product Catalog, Inventory, and Sales Challans.
 
 ### PHASE 11: Validation, Testing & Postman Collection (LOCKED 🔒)
-- **Deliverables:** Add payload validation (Zod schemas), build comprehensive Postman Collection covering all endpoints and role permissions, perform multi-product transaction edge-case testing.
+- **Deliverables:** Perform multi-product transaction edge-case testing and assemble complete Postman collection.
 
 ### PHASE 12: Deployment & Cloud Configuration (LOCKED 🔒)
-- **Deliverables:** Deploy PostgreSQL database to Neon / Supabase, deploy Express backend API to Render, deploy Vite React frontend to Vercel, configure environment variables across cloud providers.
+- **Deliverables:** Deploy PostgreSQL database to Neon / Supabase, Express backend to Render, Vite React frontend to Vercel.
 
 ### PHASE 13: Final Documentation & Setup Guide Update (LOCKED 🔒)
-- **Deliverables:** Update `README.md` and `docs/SUBMISSION_CHECKLIST.md` with live production URLs, active multi-role test account credentials, local setup instructions, and Postman import guide.
+- **Deliverables:** Update `README.md` and `docs/SUBMISSION_CHECKLIST.md` with live production URLs and test credentials.
 
 ### PHASE 14: Final Submission Audit (LOCKED 🔒)
-- **Deliverables:** End-to-end verification of all submission criteria, verifying live deployment links, test credentials, RBAC matrix, and Git commit history.
+- **Deliverables:** End-to-end verification of all submission criteria.
