@@ -24,41 +24,23 @@ The application uses a decoupled, full-stack architecture comprising a Node.js/E
 ### 2.4 Inventory & Stock Movements Pipeline (`POST /api/v1/inventory/movements`)
 `Inventory UI -> Axios -> Inventory API -> Auth/RBAC -> Controller -> Service -> Prisma Transaction -> PostgreSQL`
 
-### 2.5 Sales Challan Confirmation Pipeline (`PUT /api/v1/challans/:id/confirm`)
+### 2.5 Admin Dashboard Analytics Pipeline (`GET /api/v1/dashboard/summary`)
 
 ```
-Challan Detail UI (`ChallanDetailPage.tsx`) ──► User Confirms Modal
+Dashboard UI (`DashboardPage.tsx`)
    │
    ▼ (HTTP Header: Authorization Bearer JWT)
-Confirmation REST API (`PUT /api/v1/challans/:id/confirm`)
+Dashboard REST API (`GET /api/v1/dashboard/summary`)
    │
    ▼
-Auth Middleware (`authenticateToken`) ── Invalid JWT ──► Return HTTP 401 Unauthorized
+Auth Middleware (`authenticateToken`)
    │
    ▼
-RBAC Middleware (`authorizeRoles("ADMIN", "SALES")`) ── Unauthorized Role ──► Return HTTP 403 Forbidden
+Dashboard Controller (`dashboardController.ts`)
    │
    ▼
-Challan Controller (`challanController.ts`)
+Dashboard Service (`dashboardService.ts`)
    │
-   ▼
-Challan Service (`confirmChallanService`)
-   │
-   ▼
-Prisma Interactive Transaction (`prisma.$transaction`)
-   ├── 1. Check Challan status == DRAFT (Return 409 Conflict if CONFIRMED or CANCELLED)
-   ├── 2. Pre-Check stock for ALL items (If ANY item stock < qty -> ABORT & ROLLBACK -> 409 Conflict)
-   ├── 3. Decrement Product.currentStock for all items (Row-level conditional update)
-   ├── 4. Create OUT StockMovement audit records (createdById = req.user.id)
-   └── 5. Update Challan.status = CONFIRMED
-   │
-   ▼
-PostgreSQL Database (Committed Atomically)
+   ▼ (Concurrent Prisma Queries via Promise.all)
+PostgreSQL Database
 ```
-
----
-
-## 3. Concurrency & Locking Strategy
-
-- **Interactive Transaction Isolation**: Confirmation operations execute inside `prisma.$transaction(async (tx) => { ... })`.
-- **Atomic Conditional Updates**: Stock decrement operations use `updateMany` with condition `currentStock: { gte: item.quantity }`. If `updateMany.count === 0` (indicating stock was modified concurrently by another thread), the transaction throws an error and rolls back cleanly.

@@ -10,9 +10,9 @@ The portal enforces role-based access control (RBAC) across four distinct intern
 
 ## Current Status
 
-**PHASE 8 - Challan Confirmation & Transactional Stock Deduction Complete**
+**PHASE 9 - Admin Dashboard & Final Frontend Integration Complete**
 
-Sales Challan confirmation REST API (`PUT /api/v1/challans/:id/confirm`), interactive Prisma transactions (`prisma.$transaction`), multi-item stock availability pre-checks, complete transactional rollback on insufficient stock (`409 Conflict`), automated `OUT` stock movement generation (`reason: "Sales Challan CH-YYYY-XXXXXX"`), double-confirmation prevention, role-based authorization (`ADMIN` & `SALES` allowed; `WAREHOUSE` & `ACCOUNTS` read-only), React Confirmation modal UI, and Postman collection are fully implemented and verified.
+Admin Dashboard Summary REST API (`GET /api/v1/dashboard/summary`), real-time Prisma database aggregations, summary metrics cards (total customers, total products, low-stock items, total challans), role-based quick action shortcuts, recent sales challans widget, low stock alert list, user logout flow, Vite environment variables (`.env.example`), and Postman collection are fully implemented and verified.
 
 ---
 
@@ -37,24 +37,29 @@ Sales Challan confirmation REST API (`PUT /api/v1/challans/:id/confirm`), intera
 
 ## Implemented Modules
 
-### 1. Customer CRM Module (Phase 4)
+### 1. Admin Dashboard Module (Phase 9)
+- **API:** `GET /api/v1/dashboard/summary`
+- **Features:** Real-time summary metrics cards (Total Customers, Total Products, Low Stock Alerts Count, Total Sales Challans), top 5 recent sales challans, low-stock alert items list, role-based quick action shortcuts, user logout button, responsive sidebar layout.
+- **RBAC:** Accessible to all authenticated roles (`ADMIN`, `SALES`, `WAREHOUSE`, `ACCOUNTS`).
+
+### 2. Customer CRM Module (Phase 4)
 - **APIs:** `POST /api/v1/customers`, `GET /api/v1/customers`, `GET /api/v1/customers/:id`, `PUT /api/v1/customers/:id`
 - **Features:** Customer registration, multi-field search (`customerName`, `businessName`, `mobile`, `email`), status filters (`LEAD`, `ACTIVE`, `INACTIVE`), customer type filters (`RETAIL`, `WHOLESALE`, `DISTRIBUTOR`), follow-up dates & notes timeline.
 - **RBAC:** `ADMIN` & `SALES` (Full CRUD), `ACCOUNTS` (Read-only), `WAREHOUSE` (Restricted `403`).
 
-### 2. Product Management Module (Phase 5)
+### 3. Product Management Module (Phase 5)
 - **APIs:** `POST /api/v1/products`, `GET /api/v1/products`, `GET /api/v1/products/:id`, `PUT /api/v1/products/:id`
 - **Features:** Catalog SKU management, unique SKU collision prevention (`409 Conflict`), category & warehouse bin location filters, low-stock filter alerts (`currentStock <= minimumStock`), stock update immunity.
 - **RBAC:** `ADMIN` & `WAREHOUSE` (Full CRUD), `SALES` & `ACCOUNTS` (Read-only).
 
-### 3. Inventory & Stock Movements Module (Phase 6)
+### 4. Inventory & Stock Movements Module (Phase 6)
 - **APIs:** `POST /api/v1/inventory/movements`, `GET /api/v1/inventory/movements`, `GET /api/v1/inventory/movements/:id`
 - **Features:** Transactional Stock IN (+) and Stock OUT (-) logged within Prisma interactive transactions (`prisma.$transaction`), negative stock rejection (`409 Conflict`), immutable audit history, authenticated JWT `createdById` attribution.
 - **RBAC:** `ADMIN` & `WAREHOUSE` (Create & View), `SALES` & `ACCOUNTS` (Audit Log Read-Only).
 
-### 4. Sales Challan Management & Confirmation Module (Phase 7 & 8)
+### 5. Sales Challan Management & Confirmation Module (Phase 7 & 8)
 - **APIs:** `POST /api/v1/challans`, `GET /api/v1/challans`, `GET /api/v1/challans/:id`, `PUT /api/v1/challans/:id`, `PUT /api/v1/challans/:id/cancel`, `PUT /api/v1/challans/:id/confirm`
-- **Features:** Auto-generated unique challan numbers (`CH-YYYY-XXXXXX`), historical product snapshot preservation (`productName`, `sku`, `unitPrice`), server-side `totalQuantity` summation, editing and cancelling draft vouchers with zero stock mutation. **Transactional confirmation (`PUT /confirm`) that pre-checks multi-item stock, deducts stock, creates `OUT` stock movements, and marks status `CONFIRMED` atomically with full rollback on insufficient stock.**
+- **Features:** Auto-generated unique challan numbers (`CH-YYYY-XXXXXX`), historical product snapshot preservation (`productName`, `sku`, `unitPrice`), server-side `totalQuantity` summation, editing and cancelling draft vouchers with zero stock mutation, transactional confirmation (`PUT /confirm`) with atomic multi-item stock deduction and full rollback on insufficient stock.
 - **RBAC:** `ADMIN` & `SALES` (Draft Create, Edit, Cancel & Confirm), `WAREHOUSE` & `ACCOUNTS` (Read-Only).
 
 ---

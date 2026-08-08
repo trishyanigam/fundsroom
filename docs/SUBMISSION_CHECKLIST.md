@@ -3,7 +3,7 @@
 This checklist tracks all required submission artifacts for the **Mini ERP + CRM Operations Portal**.
 
 > [!NOTE]
-> **Phase 8 Audit Status:** Sales Challan confirmation REST API (`PUT /api/v1/challans/:id/confirm`), interactive Prisma transactions (`prisma.$transaction`), multi-item stock pre-checks, clean transactional rollback on insufficient stock (`409 Conflict`), automated `OUT` stock movement creation, role-based authorization (`ADMIN` & `SALES` allowed; `WAREHOUSE` & `ACCOUNTS` read-only), React Confirmation modal UI, and Postman requests are 100% completed and tested.
+> **Phase 9 Audit Status:** Admin Dashboard Summary REST API (`GET /api/v1/dashboard/summary`), real-time Prisma database aggregations, summary metrics cards, role-based quick action shortcuts, recent challans widget, low stock alert list, user logout flow, Vite environment variables (`.env.example`), and Postman requests are 100% completed and tested.
 
 ---
 
@@ -15,9 +15,9 @@ This checklist tracks all required submission artifacts for the **Mini ERP + CRM
 | **2** | **Live Frontend URL** | Deployed React frontend application on Vercel | ⏳ Pending Phase 12 | `[Pending Production Deployment in Phase 12]` |
 | **3** | **Live Backend API URL** | Deployed Node.js Express REST API on Render | ⏳ Pending Phase 12 | `[Pending Production Deployment in Phase 12]` |
 | **4** | **Test Credentials** | Active login accounts for all 4 roles (`ADMIN`, `SALES`, `WAREHOUSE`, `ACCOUNTS`) | ✅ Phase 3 Complete (Dev Accounts Seeded) | Demo accounts seeded in DB<br>(See table below for dev credentials) |
-| **5** | **API Documentation / Postman** | Comprehensive API specification and downloadable Postman collection | ✅ Phase 8 Complete (Auth, CRM, Product, Inventory, Challans & Confirmation Collections Ready) | Specs: `docs/API_PLAN.md`<br>Collection: `postman/Mini_ERP_CRM_Phase8_Confirmation.postman_collection.json` |
-| **6** | **README & Setup Guide** | Comprehensive `README.md` with overview, architecture, local setup & cloud deployment guide | ✅ Phase 0-8 Complete | Root `README.md` created & updated |
-| **7** | **Architecture & DB Blueprint** | Detailed explanation of backend, frontend, database schema, RBAC, & snapshot rules | ✅ Phase 0-8 Complete | `docs/ARCHITECTURE.md`<br>`docs/DATABASE_DESIGN.md`<br>`docs/ROLE_PERMISSIONS.md` |
+| **5** | **API Documentation / Postman** | Comprehensive API specification and downloadable Postman collection | ✅ Phase 9 Complete (Auth, CRM, Product, Inventory, Challans, Confirmation & Dashboard Collections Ready) | Specs: `docs/API_PLAN.md`<br>Collection: `postman/Mini_ERP_CRM_Phase9_Dashboard.postman_collection.json` |
+| **6** | **README & Setup Guide** | Comprehensive `README.md` with overview, architecture, local setup & cloud deployment guide | ✅ Phase 0-9 Complete | Root `README.md` created & updated |
+| **7** | **Architecture & DB Blueprint** | Detailed explanation of backend, frontend, database schema, RBAC, & snapshot rules | ✅ Phase 0-9 Complete | `docs/ARCHITECTURE.md`<br>`docs/DATABASE_DESIGN.md`<br>`docs/ROLE_PERMISSIONS.md` |
 | **8** | **Known Limitations** | Documented technical boundaries, assumptions, and future enhancements | ✅ Phase 0 Complete | `docs/ASSUMPTIONS.md`<br>`docs/EDGE_CASES.md` |
 
 ---

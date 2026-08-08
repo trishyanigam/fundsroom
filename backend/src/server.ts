@@ -6,6 +6,7 @@ import customerRoutes from './routes/customerRoutes';
 import productRoutes from './routes/productRoutes';
 import inventoryRoutes from './routes/inventoryRoutes';
 import challanRoutes from './routes/challanRoutes';
+import dashboardRoutes from './routes/dashboardRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -48,6 +49,10 @@ app.use('/api/inventory/movements', inventoryRoutes);
 app.use('/api/v1/challans', challanRoutes);
 app.use('/api/challans', challanRoutes);
 
+// Admin Dashboard Summary Routes
+app.use('/api/v1/dashboard', dashboardRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+
 // 404 Unmatched Route Handler
 app.use((_req: Request, res: Response) => {
   res.status(404).json({
@@ -81,6 +86,7 @@ if (process.env.NODE_ENV !== 'test') {
     console.log(`📦 Product Catalog Endpoints mounted at http://localhost:${PORT}/api/v1/products`);
     console.log(`🏭 Inventory Endpoints mounted at http://localhost:${PORT}/api/v1/inventory/movements`);
     console.log(`📄 Sales Challan Endpoints mounted at http://localhost:${PORT}/api/v1/challans`);
+    console.log(`📊 Admin Dashboard Endpoints mounted at http://localhost:${PORT}/api/v1/dashboard`);
   });
 }
 

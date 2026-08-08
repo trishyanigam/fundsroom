@@ -4,40 +4,22 @@ This document details the operational business process flows for the **Mini ERP 
 
 ---
 
-## 1. Sales Challan Confirmation & Transactional Stock Deduction Flow
+## 1. Admin Dashboard Analytics Summary Flow
 
 ```
-Start (Sales / Admin user clicks "Confirm & Deduct Stock")
+Start (User opens Dashboard)
    │
    ▼
-PUT /api/v1/challans/:id/confirm (No request body required)
+GET /api/v1/dashboard/summary (Authorization: Bearer JWT)
    │
    ▼
-Begin Prisma Interactive Transaction (`prisma.$transaction`)
-   │
-   ├─► 1. Verify Challan status == DRAFT (Return HTTP 409 Conflict if CONFIRMED or CANCELLED)
-   │
-   ├─► 2. Multi-Item Stock Availability Pre-Check Loop:
-   │      For every item in challan.items:
-   │         Is Product.currentStock >= item.quantity?
-   │         │
-   │         ├─► NO (Insufficient Stock on ANY item):
-   │         │      │
-   │         │      └─► ABORT & ROLLBACK TRANSACTION IMMEDIATELY!
-   │         │             - Product stocks remain 100% untouched
-   │         │             - Zero StockMovement records created
-   │         │             - Challan status remains DRAFT
-   │         │             - Return HTTP 409 Conflict with available vs requested details
-   │         │
-   │         └─► YES (Sufficient Stock on ALL items): Continue loop
-   │
-   ├─► 3. Atomic Multi-Item Stock Deduction & Audit Logging Loop:
-   │      For every item in challan.items:
-   │         - Decrement Product.currentStock by item.quantity (Row-level conditional lock)
-   │         - Create OUT StockMovement (reason: "Sales Challan CH-YYYY-XXXXXX", createdById = req.user.id)
-   │
-   └─► 4. Update Challan.status = CONFIRMED
+Execute Concurrent Database Aggregation Queries (`Promise.all`):
+   ├─► Query 1: Count Total Customers (`prisma.customer.count()`)
+   ├─► Query 2: Count Total Products (`prisma.product.count()`)
+   ├─► Query 3: Count Total Sales Challans (`prisma.challan.count()`)
+   ├─► Query 4: Fetch Product Stock Levels -> Filter Low Stock Items (`currentStock <= minimumStock`)
+   └─► Query 5: Fetch Top 5 Recent Sales Challans (`take: 5, orderBy: { createdAt: 'desc' }`)
    │
    ▼
-Commit Transaction & Return HTTP 200 OK
+Format Summary Object & Return HTTP 200 OK
 ```

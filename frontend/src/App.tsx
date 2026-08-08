@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { checkHealth } from './services/api';
+import React, { useState } from 'react';
+import { DashboardPage } from './pages/DashboardPage';
 import { CustomerListPage } from './pages/CustomerListPage';
 import { CustomerDetailPage } from './pages/CustomerDetailPage';
 import { ProductListPage } from './pages/ProductListPage';
@@ -11,38 +11,27 @@ import { ChallanFormPage } from './pages/ChallanFormPage';
 import { Challan } from './services/challanService';
 
 export const App: React.FC = () => {
-  const [apiHealthStatus, setApiHealthStatus] = useState<string>('Checking...');
-  const [isHealthy, setIsHealthy] = useState<boolean | null>(null);
-
-  // Active View State
+  // Active View State (Default: Dashboard)
   const [activeTab, setActiveTab] = useState<
     'dashboard' | 'customers' | 'customerDetail' | 'products' | 'productDetail' | 'inventory' | 'challans' | 'challanDetail' | 'challanForm'
-  >('challans');
+  >('dashboard');
 
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [selectedChallanId, setSelectedChallanId] = useState<string | null>(null);
   const [editingChallan, setEditingChallan] = useState<Challan | null>(null);
 
-  // Current Role (Default: ADMIN; selectable via role switcher)
+  // Current Role (Selectable via role switcher)
   const [currentRole, setCurrentRole] = useState<'ADMIN' | 'SALES' | 'WAREHOUSE' | 'ACCOUNTS'>('ADMIN');
 
-  useEffect(() => {
-    checkHealth()
-      .then((data) => {
-        if (data && data.success) {
-          setApiHealthStatus(data.message || 'API is running');
-          setIsHealthy(true);
-        } else {
-          setApiHealthStatus('API response error');
-          setIsHealthy(false);
-        }
-      })
-      .catch(() => {
-        setApiHealthStatus('Backend offline / Unreachable');
-        setIsHealthy(false);
-      });
-  }, []);
+
+  const handleLogout = () => {
+    if (window.confirm('Are you sure you want to log out of the Operations Portal?')) {
+      localStorage.removeItem('token');
+      setActiveTab('dashboard');
+      alert('Logged out successfully.');
+    }
+  };
 
   const handleViewCustomer = (id: string) => {
     setSelectedCustomerId(id);
@@ -112,6 +101,9 @@ export const App: React.FC = () => {
             }`}
           >
             <span>Dashboard</span>
+            <span className="text-[10px] bg-sky-500/20 text-sky-300 border border-sky-500/30 px-1.5 py-0.5 rounded">
+              Phase 9
+            </span>
           </button>
 
           {/* Customer CRM Tab */}
@@ -158,7 +150,7 @@ export const App: React.FC = () => {
             <span>Inventory Movements</span>
           </button>
 
-          {/* Sales Challans Tab (All roles allowed) */}
+          {/* Sales Challans Tab */}
           <button
             onClick={() => {
               setSelectedChallanId(null);
@@ -172,9 +164,6 @@ export const App: React.FC = () => {
             }`}
           >
             <span>Sales Challans</span>
-            <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded">
-              Phase 7
-            </span>
           </button>
         </nav>
 
@@ -186,10 +175,10 @@ export const App: React.FC = () => {
             onChange={(e) => setCurrentRole(e.target.value as any)}
             className="w-full bg-slate-800 text-white border border-slate-700 rounded px-2 py-1.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-sky-500"
           >
-            <option value="ADMIN">ADMIN (Full Access)</option>
-            <option value="SALES">SALES (Create & Edit Draft Challans)</option>
-            <option value="WAREHOUSE">WAREHOUSE (Challans Read-Only)</option>
-            <option value="ACCOUNTS">ACCOUNTS (Challans Read-Only)</option>
+            <option value="ADMIN">ADMIN (Full System Access)</option>
+            <option value="SALES">SALES (CRM & Sales Challans)</option>
+            <option value="WAREHOUSE">WAREHOUSE (Products & Stock)</option>
+            <option value="ACCOUNTS">ACCOUNTS (Read-Only Audit)</option>
           </select>
         </div>
       </aside>
@@ -202,65 +191,36 @@ export const App: React.FC = () => {
             <h2 className="text-xl font-bold text-slate-900">
               Mini ERP + CRM Operations Portal
             </h2>
-            <p className="text-xs text-slate-500">Wholesale & Distribution Enterprise Platform</p>
+            <p className="text-xs text-slate-500">Enterprise Operations Platform</p>
           </div>
 
           <div className="flex items-center space-x-3">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
-              Phase 7 - Sales Challans Complete
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+              Phase 9 Complete
             </span>
             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-slate-900 text-white">
-              Role: {currentRole}
+              User: {currentRole}
             </span>
+            <button
+              onClick={handleLogout}
+              className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded border border-slate-300 transition-colors"
+            >
+              Logout
+            </button>
           </div>
         </header>
 
         {/* Body View Area */}
         <main className="flex-1 overflow-y-auto p-6 bg-slate-50">
           {activeTab === 'dashboard' && (
-            <div className="max-w-4xl mx-auto space-y-6">
-              <div className="bg-gradient-to-r from-slate-900 to-sky-900 text-white rounded-xl p-6 shadow-md">
-                <h3 className="text-2xl font-extrabold mb-2">
-                  Mini ERP + CRM Operations Portal
-                </h3>
-                <p className="text-slate-300 text-sm leading-relaxed max-w-2xl">
-                  Phase 7 Sales Challans active. Draft multi-item delivery vouchers with historical product price & SKU snapshot preservation and zero stock deduction until Phase 8 confirmation.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-sm font-semibold text-slate-700">Backend API Health</h4>
-                      <span
-                        className={`inline-block w-2.5 h-2.5 rounded-full ${
-                          isHealthy === true
-                            ? 'bg-emerald-500 animate-pulse'
-                            : isHealthy === false
-                            ? 'bg-rose-500'
-                            : 'bg-amber-500'
-                        }`}
-                      />
-                    </div>
-                    <p className="text-xs text-slate-500 font-mono bg-slate-100 p-2 rounded border border-slate-200 mt-2">
-                      GET /api/health → {apiHealthStatus}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                  <div>
-                    <h4 className="text-sm font-semibold text-slate-700 mb-2">Sales Challan Module</h4>
-                    <ul className="text-xs text-slate-600 space-y-1.5 list-disc list-inside">
-                      <li>Auto-Generated Challan Numbers (e.g. `CH-2026-000001`)</li>
-                      <li>Historical Product Snapshots (`productName`, `sku`, `unitPrice`)</li>
-                      <li>Zero Stock Mutation on Draft (Phase 8 handles stock deduction)</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <DashboardPage
+              userRole={currentRole}
+              onNavigate={(tab) => setActiveTab(tab as any)}
+              onViewChallan={handleViewChallan}
+              onCreateChallan={handleCreateChallan}
+              onCreateCustomer={() => setActiveTab('customers')}
+              onCreateProduct={() => setActiveTab('products')}
+            />
           )}
 
           {activeTab === 'customers' && showCustomerCrm && (
