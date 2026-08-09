@@ -32,6 +32,17 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Root Welcome Endpoint
+app.get('/', (_req: Request, res: Response) => {
+  res.status(200).json({
+    success: true,
+    name: 'Mini ERP + CRM Operations Portal REST API',
+    status: 'online',
+    healthCheck: '/api/health',
+    documentation: '/docs/API_DOCUMENTATION.md'
+  });
+});
+
 // Health Check Endpoint
 app.get('/api/health', (_req: Request, res: Response) => {
   res.status(200).json({
