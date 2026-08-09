@@ -1,32 +1,42 @@
-# Submission Audit Checklist
+# Submission Checklist
 
-This checklist tracks all required submission artifacts for the **Mini ERP + CRM Operations Portal**.
-
-> [!NOTE]
-> **Phase 9 Audit Status:** Admin Dashboard Summary REST API (`GET /api/v1/dashboard/summary`), real-time Prisma database aggregations, summary metrics cards, role-based quick action shortcuts, recent challans widget, low stock alert list, user logout flow, Vite environment variables (`.env.example`), and Postman requests are 100% completed and tested.
+This document tracks all 8 required submission deliverables for the **Mini ERP + CRM Operations Portal**.
 
 ---
 
-## Submission Items Audit Table
+## Deliverables Audit
 
-| # | Submission Item | Required Specification | Status | Value / Placeholder |
-| :-: | :--- | :--- | :-: | :--- |
-| **1** | **GitHub Repository** | Public / accessible Git repo with meaningful commit history | ✅ Phase 1 Complete | [https://github.com/trishyanigam/fundsroom.git](https://github.com/trishyanigam/fundsroom.git) |
-| **2** | **Live Frontend URL** | Deployed React frontend application on Vercel | ⏳ Pending Phase 12 | `[Pending Production Deployment in Phase 12]` |
-| **3** | **Live Backend API URL** | Deployed Node.js Express REST API on Render | ⏳ Pending Phase 12 | `[Pending Production Deployment in Phase 12]` |
-| **4** | **Test Credentials** | Active login accounts for all 4 roles (`ADMIN`, `SALES`, `WAREHOUSE`, `ACCOUNTS`) | ✅ Phase 3 Complete (Dev Accounts Seeded) | Demo accounts seeded in DB<br>(See table below for dev credentials) |
-| **5** | **API Documentation / Postman** | Comprehensive API specification and downloadable Postman collection | ✅ Phase 9 Complete (Auth, CRM, Product, Inventory, Challans, Confirmation & Dashboard Collections Ready) | Specs: `docs/API_PLAN.md`<br>Collection: `postman/Mini_ERP_CRM_Phase9_Dashboard.postman_collection.json` |
-| **6** | **README & Setup Guide** | Comprehensive `README.md` with overview, architecture, local setup & cloud deployment guide | ✅ Phase 0-9 Complete | Root `README.md` created & updated |
-| **7** | **Architecture & DB Blueprint** | Detailed explanation of backend, frontend, database schema, RBAC, & snapshot rules | ✅ Phase 0-9 Complete | `docs/ARCHITECTURE.md`<br>`docs/DATABASE_DESIGN.md`<br>`docs/ROLE_PERMISSIONS.md` |
-| **8** | **Known Limitations** | Documented technical boundaries, assumptions, and future enhancements | ✅ Phase 0 Complete | `docs/ASSUMPTIONS.md`<br>`docs/EDGE_CASES.md` |
+### 1. GitHub Repository Link
+- **STATUS**: COMPLETED
+- **Details**: Project source code committed with structured history (`frontend/`, `backend/`, `docs/`, `postman/`, `README.md`, `.gitignore`).
+- **Repository URL**: `https://github.com/trishyanigam/fundsroom`
 
----
+### 2. Live Frontend URL
+- **STATUS**: PENDING (Local Development Verified)
+- **Details**: Local testing environment fully functional at `http://localhost:5173`. Ready for cloud deployment on Vercel or Netlify when production host domain is provisioned.
 
-## Development Test Credentials (Phase 3 Implemented)
+### 3. Live Backend API URL
+- **STATUS**: PENDING (Local API Verified)
+- **Details**: Local REST API fully functional at `http://localhost:5000/api`. Ready for cloud deployment on Render or Railway when production host domain is provisioned.
 
-| Role | Demo Email | Default Development Password | Allowed Access Summary |
-| :--- | :--- | :--- | :--- |
-| **`ADMIN`** | `admin@erp.local` | `AdminPass123!` | Full System Access Across All Modules |
-| **`SALES`** | `sales@erp.local` | `SalesPass123!` | Customer CRM, Products View, Sales Challans (Draft, Edit & Confirm) |
-| **`WAREHOUSE`** | `warehouse@erp.local` | `WarehousePass123!` | Product Catalog (CRUD), Stock Movements (IN/OUT), Challans View |
-| **`ACCOUNTS`** | `accounts@erp.local` | `AccountsPass123!` | Read-Only Audit across All Modules |
+### 4. Test Login Credentials for All Roles
+- **STATUS**: COMPLETED
+- **Details**: 4 RBAC role accounts (`ADMIN`, `SALES`, `WAREHOUSE`, `ACCOUNTS`) pre-seeded in database. See `docs/TEST_CREDENTIALS.md` or `README.md`.
+
+### 5. Postman Collection / API Documentation
+- **STATUS**: COMPLETED
+- **Details**:
+  - Unified Postman Collection: `postman/Mini_ERP_CRM_Portal.postman_collection.json`
+  - Technical API Spec: `docs/API_DOCUMENTATION.md`
+
+### 6. README with Setup and Deployment Instructions
+- **STATUS**: COMPLETED
+- **Details**: Comprehensive `README.md` created covering project overview, tech stack, architecture flow, step-by-step local setup, environment variables, demo login accounts, cloud deployment, and API details.
+
+### 7. Short Architecture Explanation
+- **STATUS**: COMPLETED
+- **Details**: Detailed pipeline diagrams, JWT security model, RBAC matrix, and transactional challan confirmation atomicity documented in `docs/ARCHITECTURE.md` and `README.md`.
+
+### 8. Known Limitations or Incomplete Parts
+- **STATUS**: COMPLETED
+- **Details**: Actual project boundaries and limitations (single JWT model, basic database ILIKE search, DOM print stylesheets, etc.) documented in `docs/LIMITATIONS.md`.

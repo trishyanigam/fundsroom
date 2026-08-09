@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardPage } from './pages/DashboardPage';
 import { CustomerListPage } from './pages/CustomerListPage';
 import { CustomerDetailPage } from './pages/CustomerDetailPage';
@@ -9,26 +9,72 @@ import { ChallanListPage } from './pages/ChallanListPage';
 import { ChallanDetailPage } from './pages/ChallanDetailPage';
 import { ChallanFormPage } from './pages/ChallanFormPage';
 import { Challan } from './services/challanService';
+import { LandingPage } from './pages/LandingPage';
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { User, UserRole, getMeApi } from './services/authService';
 
 export const App: React.FC = () => {
-  // Active View State (Default: Dashboard)
+  // Active View State (Default: landing)
   const [activeTab, setActiveTab] = useState<
-    'dashboard' | 'customers' | 'customerDetail' | 'products' | 'productDetail' | 'inventory' | 'challans' | 'challanDetail' | 'challanForm'
-  >('dashboard');
+    'landing' | 'login' | 'register' | 'dashboard' | 'customers' | 'customerDetail' | 'products' | 'productDetail' | 'inventory' | 'challans' | 'challanDetail' | 'challanForm'
+  >('landing');
 
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [selectedChallanId, setSelectedChallanId] = useState<string | null>(null);
   const [editingChallan, setEditingChallan] = useState<Challan | null>(null);
 
-  // Current Role (Selectable via role switcher)
-  const [currentRole, setCurrentRole] = useState<'ADMIN' | 'SALES' | 'WAREHOUSE' | 'ACCOUNTS'>('ADMIN');
+  // Authenticated states
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentRole, setCurrentRole] = useState<UserRole | null>(null);
+  const [authChecking, setAuthChecking] = useState<boolean>(true);
+  const [selectedRoleContext, setSelectedRoleContext] = useState<UserRole | undefined>(undefined);
 
+  useEffect(() => {
+    const initAuth = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setAuthChecking(false);
+        return;
+      }
+      try {
+        const response = await getMeApi();
+        if (response.success && response.data) {
+          setCurrentUser(response.data);
+          setCurrentRole(response.data.role);
+          setActiveTab('dashboard');
+        } else {
+          localStorage.removeItem('token');
+        }
+      } catch (err) {
+        console.error('Session validation failed:', err);
+        localStorage.removeItem('token');
+      } finally {
+        setAuthChecking(false);
+      }
+    };
+    initAuth();
+  }, []);
+
+  const handleLoginSuccess = (token: string, user: User) => {
+    localStorage.setItem('token', token);
+    setCurrentUser(user);
+    setCurrentRole(user.role);
+    setActiveTab('dashboard');
+  };
+
+  const handleRegisterSuccess = (registeredRole: UserRole) => {
+    setSelectedRoleContext(registeredRole);
+    setActiveTab('login');
+  };
 
   const handleLogout = () => {
     if (window.confirm('Are you sure you want to log out of the Operations Portal?')) {
       localStorage.removeItem('token');
-      setActiveTab('dashboard');
+      setCurrentUser(null);
+      setCurrentRole(null);
+      setActiveTab('landing');
       alert('Logged out successfully.');
     }
   };
@@ -74,7 +120,57 @@ export const App: React.FC = () => {
     setActiveTab('challans');
   };
 
-  const showCustomerCrm = currentRole !== 'WAREHOUSE';
+  const showCustomerCrm = currentRole && currentRole !== 'WAREHOUSE';
+
+  if (authChecking) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white font-sans">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-2" />
+        <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Loading System Session...</p>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    if (activeTab === 'login') {
+      return (
+        <LoginPage
+          initialRole={selectedRoleContext}
+          onLoginSuccess={handleLoginSuccess}
+          onNavigateToRegister={(role) => {
+            setSelectedRoleContext(role);
+            setActiveTab('register');
+          }}
+          onBackToHome={() => setActiveTab('landing')}
+        />
+      );
+    }
+    if (activeTab === 'register') {
+      return (
+        <RegisterPage
+          initialRole={selectedRoleContext}
+          onRegisterSuccess={handleRegisterSuccess}
+          onNavigateToLogin={(role) => {
+            setSelectedRoleContext(role);
+            setActiveTab('login');
+          }}
+          onBackToHome={() => setActiveTab('landing')}
+        />
+      );
+    }
+    return (
+      <LandingPage
+        onNavigateToLogin={(role) => {
+          setSelectedRoleContext(role);
+          setActiveTab('login');
+        }}
+        onNavigateToRegister={(role) => {
+          setSelectedRoleContext(role);
+          setActiveTab('register');
+        }}
+      />
+    );
+  }
 
   return (
     <div className="flex h-screen bg-slate-100 font-sans text-slate-800">
@@ -101,9 +197,6 @@ export const App: React.FC = () => {
             }`}
           >
             <span>Dashboard</span>
-            <span className="text-[10px] bg-sky-500/20 text-sky-300 border border-sky-500/30 px-1.5 py-0.5 rounded">
-              Phase 9
-            </span>
           </button>
 
           {/* Customer CRM Tab */}
@@ -166,21 +259,6 @@ export const App: React.FC = () => {
             <span>Sales Challans</span>
           </button>
         </nav>
-
-        {/* Role Switcher Demo Control */}
-        <div className="p-4 border-t border-slate-800 text-xs">
-          <label className="text-slate-500 font-semibold block uppercase mb-1">Demo Role Context</label>
-          <select
-            value={currentRole}
-            onChange={(e) => setCurrentRole(e.target.value as any)}
-            className="w-full bg-slate-800 text-white border border-slate-700 rounded px-2 py-1.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-sky-500"
-          >
-            <option value="ADMIN">ADMIN (Full System Access)</option>
-            <option value="SALES">SALES (CRM & Sales Challans)</option>
-            <option value="WAREHOUSE">WAREHOUSE (Products & Stock)</option>
-            <option value="ACCOUNTS">ACCOUNTS (Read-Only Audit)</option>
-          </select>
-        </div>
       </aside>
 
       {/* Main Content Area */}
@@ -195,11 +273,8 @@ export const App: React.FC = () => {
           </div>
 
           <div className="flex items-center space-x-3">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
-              Phase 9 Complete
-            </span>
             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-slate-900 text-white">
-              User: {currentRole}
+              User: {currentUser.name} ({currentRole})
             </span>
             <button
               onClick={handleLogout}
@@ -214,7 +289,7 @@ export const App: React.FC = () => {
         <main className="flex-1 overflow-y-auto p-6 bg-slate-50">
           {activeTab === 'dashboard' && (
             <DashboardPage
-              userRole={currentRole}
+              userRole={currentRole!}
               onNavigate={(tab) => setActiveTab(tab as any)}
               onViewChallan={handleViewChallan}
               onCreateChallan={handleCreateChallan}
@@ -225,7 +300,7 @@ export const App: React.FC = () => {
 
           {activeTab === 'customers' && showCustomerCrm && (
             <CustomerListPage
-              userRole={currentRole}
+              userRole={currentRole!}
               onViewCustomer={handleViewCustomer}
             />
           )}
@@ -233,14 +308,14 @@ export const App: React.FC = () => {
           {activeTab === 'customerDetail' && selectedCustomerId && showCustomerCrm && (
             <CustomerDetailPage
               customerId={selectedCustomerId}
-              userRole={currentRole}
+              userRole={currentRole!}
               onBack={handleBackToCustomerList}
             />
           )}
 
           {activeTab === 'products' && (
             <ProductListPage
-              userRole={currentRole}
+              userRole={currentRole!}
               onViewProduct={handleViewProduct}
             />
           )}
@@ -248,18 +323,18 @@ export const App: React.FC = () => {
           {activeTab === 'productDetail' && selectedProductId && (
             <ProductDetailPage
               productId={selectedProductId}
-              userRole={currentRole}
+              userRole={currentRole!}
               onBack={handleBackToProductList}
             />
           )}
 
           {activeTab === 'inventory' && (
-            <InventoryPage userRole={currentRole} />
+            <InventoryPage userRole={currentRole!} />
           )}
 
           {activeTab === 'challans' && (
             <ChallanListPage
-              userRole={currentRole}
+              userRole={currentRole!}
               onCreateNew={handleCreateChallan}
               onViewChallan={handleViewChallan}
               onEditChallan={handleEditChallan}
@@ -277,7 +352,7 @@ export const App: React.FC = () => {
           {activeTab === 'challanDetail' && selectedChallanId && (
             <ChallanDetailPage
               challanId={selectedChallanId}
-              userRole={currentRole}
+              userRole={currentRole!}
               onBack={handleBackToChallanList}
               onEditDraft={handleEditChallan}
             />

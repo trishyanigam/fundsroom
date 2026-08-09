@@ -15,8 +15,19 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Core Middleware
+const allowedOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim())
+  : [process.env.FRONTEND_URL || 'http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173'];
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, Postman, server-to-server health checks)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  },
   credentials: true
 }));
 app.use(express.json());
@@ -25,7 +36,7 @@ app.use(express.json());
 app.get('/api/health', (_req: Request, res: Response) => {
   res.status(200).json({
     success: true,
-    message: 'Mini ERP CRM API is running'
+    message: 'API is healthy'
   });
 });
 

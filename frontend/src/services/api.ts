@@ -11,6 +11,20 @@ export const apiClient = axios.create({
   timeout: 10000,
 });
 
+// Inject JWT Token in Header of every request if present
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 // Basic health check helper
 export const checkHealth = async () => {
   try {
