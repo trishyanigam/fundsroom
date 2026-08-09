@@ -1,4 +1,5 @@
-import { PrismaClient, Role } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+import * as PrismaModule from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 
@@ -7,11 +8,19 @@ dotenv.config();
 const prisma = new PrismaClient();
 const SALT_ROUNDS = 10;
 
+// Resilient Role Enum lookup (supports both UserRole and Role definitions)
+const RoleEnum: any = (PrismaModule as any).UserRole || (PrismaModule as any).Role || {
+  ADMIN: 'ADMIN',
+  SALES: 'SALES',
+  WAREHOUSE: 'WAREHOUSE',
+  ACCOUNTS: 'ACCOUNTS'
+};
+
 export interface DemoAccount {
   name: string;
   email: string;
   passwordRaw: string;
-  role: Role;
+  role: any;
 }
 
 export const DEMO_ACCOUNTS: DemoAccount[] = [
@@ -19,25 +28,25 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
     name: 'System Administrator',
     email: 'admin@erp.local',
     passwordRaw: process.env.ADMIN_SEED_PASSWORD || 'AdminPass123!',
-    role: Role.ADMIN
+    role: RoleEnum.ADMIN
   },
   {
     name: 'Sales Representative',
     email: 'sales@erp.local',
     passwordRaw: process.env.SALES_SEED_PASSWORD || 'SalesPass123!',
-    role: Role.SALES
+    role: RoleEnum.SALES
   },
   {
     name: 'Warehouse Manager',
     email: 'warehouse@erp.local',
     passwordRaw: process.env.WAREHOUSE_SEED_PASSWORD || 'WarehousePass123!',
-    role: Role.WAREHOUSE
+    role: RoleEnum.WAREHOUSE
   },
   {
     name: 'Financial Accountant',
     email: 'accounts@erp.local',
     passwordRaw: process.env.ACCOUNTS_SEED_PASSWORD || 'AccountsPass123!',
-    role: Role.ACCOUNTS
+    role: RoleEnum.ACCOUNTS
   }
 ];
 
@@ -48,7 +57,7 @@ async function main() {
     for (const account of DEMO_ACCOUNTS) {
       const passwordHash = await bcrypt.hash(account.passwordRaw, SALT_ROUNDS);
 
-      const user = await prisma.user.upsert({
+      const user = await (prisma.user as any).upsert({
         where: { email: account.email },
         update: {
           name: account.name,
@@ -68,9 +77,8 @@ async function main() {
 
     console.log('🌱 All 4 Development Role Test Accounts seeded successfully.');
   } catch (e: any) {
-    console.warn('⚠️ Could not connect to local PostgreSQL to seed database.');
+    console.warn('⚠️ Could not connect to PostgreSQL database to seed test accounts.');
     console.warn(`Reason: ${e.message ? e.message.split('\n')[0] : e}`);
-    console.warn('💡 Please ensure PostgreSQL is running on localhost:5432 and credentials in backend/.env are valid.');
   } finally {
     await prisma.$disconnect();
   }
